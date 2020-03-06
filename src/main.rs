@@ -1,61 +1,82 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
+#[macro_use] extern crate nanoid;
+
 #[macro_use] extern crate rocket;
 extern crate rocket_contrib;
-
+use rocket::http::Status;
+use std::path::PathBuf;
 use rocket::fairing::AdHoc;
+use rocket::Request;
+use rocket::request::FromRequest;
+use rocket::Outcome;
 use rocket::State;
-use rocket::Data;
-
-use std::collections::HashMap;
+use rocket::response::{self, Content};
+use rocket::http::ContentType;
 use rocket_contrib::templates::{Template};
 
-use std::io;
+extern crate tree_magic;
+
+use std::fs::File;
+use std::io::ErrorKind;
 use std::path::{Path};
+use std::vec::Vec;
+use std::collections::HashMap;
+use std::error::Error;
 
 mod id;
+mod upload;
+
+pub struct HostHeader<'a>(pub &'a str);
+impl<'a, 'r> FromRequest<'a, 'r> for HostHeader<'a> {
+    type Error = ();
+
+    fn from_request(request: &'a Request) -> rocket::request::Outcome<Self, Self::Error> {
+        match request.headers().get_one("Host") {
+            Some(h) => Outcome::Success(HostHeader(h)),
+            None => Outcome::Forward(()),
+        }
+    }
+}
 
 #[get("/")]
-fn index() -> Template {
-    let mut context = HashMap::<String, String>::new();
-    context.insert("url".to_string(), "http://localhost:8000".to_string());
+fn index(host: HostHeader) -> Template {
+    let mut context = HashMap::<&str, &str>::new();
+    context.insert("url", host.0);
     Template::render("index", context)
 }
 
-#[post("/", data = "<paste>")]
-fn upload_post_route(paste: Data, config: State<ConfigState>) -> io::Result<String> {
-    upload(paste, config)
-}
-
-#[put("/<file>", data = "<paste>")]
-fn upload_put_route(paste: Data, file: String, config: State<ConfigState>) -> io::Result<String> {
-    upload(paste, config)
-}
-
-fn upload(paste: Data, config: State<ConfigState>) -> io::Result<String> {
-    let id = id::create_id();
+#[get("/<id>")]
+fn get_file(id: String, config: State<ConfigState>) -> Result<Content<File>, Status> {
+    let id = id.split(".").collect::<Vec<&str>>()[0];
     let filename = Path::new(&config.storage_path).join(&id);
-    let url = format!("{host}/{id}\n", host = "http://localhost:8000", id = id);
+    let file = File::open(&filename);
+    match file {
+        Err(_) => return Err(Status::NotFound),
+        _ => ()
+    };
 
-    // Write the paste out to the file and return the URL.
-    paste.stream_to_file(Path::new(&filename))?;
-    Ok(url)
+    let mut mime = tree_magic::from_filepath(&filename);
+
+    if mime.contains("text/") {
+        mime = "text/plain".to_string()
+    }
+
+    Ok(Content(ContentType::parse_flexible(&mime).unwrap(), file.unwrap()))
 }
 
-struct ConfigState {
+pub struct ConfigState {
     storage_path: String,
 }
 
-// #[derive(Serialize)]
-// struct TemplateContext {
-//     title: &'static str,
-//     // This key tells handlebars which template is the parent.
-//     parent: &'static str,
-// }
-
 fn main() {
     rocket::ignite()
-        .mount("/", routes![index,upload_post_route,upload_put_route,rand])
+        .mount("/", routes![
+                  index
+                , get_file
+                , upload::upload_post_route
+                , upload::upload_put_route
+        ])
         .attach(Template::fairing())
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("Adding config to managed state...");

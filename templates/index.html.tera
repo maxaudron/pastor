@@ -20,16 +20,16 @@ Files
   Upload a single file.
   The first token is needed if you want to change or delete the paste later:
   -----------------------------------------------------------------------------------
-  $ curl -F c=@vim.png {{ url }}/
-  a2fm8 {{ url }}/xc78CK
+  $ curl -F c=@vim.png https://{{ url }}/
+  a2fm8 https://{{ url }}/xc78CK
   -----------------------------------------------------------------------------------
   
 
   You can also upload mutiple files at once and stream from stdin:
   -----------------------------------------------------------------------------------
-  $ echo something.txt | curl -F c=@vim.png -F b=@- {{ url }}/
-  a2fm8 {{ url }}/xc78CK
-  g2m87 {{ url }}/5jK8a3
+  $ echo something.txt | curl -F c=@vim.png -F b=@- https://{{ url }}/
+  a2fm8 https://{{ url }}/xc78CK
+  g2m87 https://{{ url }}/5jK8a3
   -----------------------------------------------------------------------------------
 
 
@@ -37,7 +37,7 @@ Files
   
   Update a paste with a newer version
   -----------------------------------------------------------------------------------
-  $ curl -F c=@vim.png -X PUT -d token=a2fm8 {{ url }}/xc78CK
+  $ curl -F c=@vim.png -X PUT -d token=a2fm8 https://{{ url }}/xc78CK
   -----------------------------------------------------------------------------------
 
 
@@ -45,7 +45,7 @@ Files
 
   delete the paste
   -----------------------------------------------------------------------------------
-  $ curl -X DELETE -d token=a2fm8 {{ url }}/xc78CK
+  $ curl -X DELETE -d token=a2fm8 https://{{ url }}/xc78CK
   -----------------------------------------------------------------------------------
 
 
@@ -56,8 +56,8 @@ Links
   Upload a single file.
   The first token is needed if you want to change or delete the link later:
   -----------------------------------------------------------------------------------
-  $ curl -d url=google.com {{ url }}/u
-  a2fm8 {{ url }}/u/xc78CK
+  $ curl -d url=google.com https://{{ url }}/u
+  a2fm8 https://{{ url }}/u/xc78CK
   -----------------------------------------------------------------------------------
 
 
@@ -65,7 +65,7 @@ Links
 
   Update a paste with a newer version
   -----------------------------------------------------------------------------------
-  $ curl -d url=google.com -X PUT -d token=a2fm8 {{ url }}/u
+  $ curl -d url=google.com -X PUT -d token=a2fm8 https://{{ url }}/u
   -----------------------------------------------------------------------------------
 
 
@@ -73,7 +73,7 @@ Links
 
   delete the paste
   -----------------------------------------------------------------------------------
-  $ curl -X DELETE -d token=a2fm8 {{ url }}/u/xc78CK
+  $ curl -X DELETE -d token=a2fm8 https://{{ url }}/u/xc78CK
   -----------------------------------------------------------------------------------
 
 </pre>
