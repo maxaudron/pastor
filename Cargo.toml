@@ -8,7 +8,7 @@ edition = "2018"
 
 [dependencies]
 tree_magic = "0.2"
-rocket = "0.4.2"
+rocket = "0.4"
 nanoid = "^0.3.0"
 
 [dependencies.rocket_contrib]

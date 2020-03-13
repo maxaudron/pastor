@@ -1,0 +1,7 @@
+include:
+  - project: 'cocainefarm/templates/ci'
+    file: '/dockerhub.yml'
+
+build:tags:dockerhub:
+  tags:
+    - k8s
