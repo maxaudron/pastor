@@ -20,5 +20,5 @@ used. Detail can be found [[https://rocket.rs/v0.4/guide/configuration/#configur
 By default the container binds to ~0.0.0.0~ and exposes port 8000. This can be
 changed with the env vars ~$ROCKET_ADDRESS~ and ~$ROCKET_PORT~ respectivly.
 
-Pastes are stored in ~$ROCKET_STORAGE_PATH~. The index page is using a tera template ~index.html.tera~
+Pastes are stored in ~$ROCKET_STORAGE_DIR~. The index page is using a tera template ~index.html.tera~
 in ~$ROCKET_TEMPLATE_DIR~

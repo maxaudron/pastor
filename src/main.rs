@@ -1,28 +1,30 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 
-#[macro_use] extern crate nanoid;
+#[macro_use]
+extern crate nanoid;
 
-#[macro_use] extern crate rocket;
+#[macro_use]
+extern crate rocket;
 extern crate rocket_contrib;
-use rocket::http::Status;
-use std::path::PathBuf;
 use rocket::fairing::AdHoc;
-use rocket::Request;
-use rocket::request::FromRequest;
-use rocket::Outcome;
-use rocket::State;
-use rocket::response::{self, Content};
 use rocket::http::ContentType;
-use rocket_contrib::templates::{Template};
+use rocket::http::Status;
+use rocket::request::FromRequest;
+use rocket::response::{self, Content};
+use rocket::Outcome;
+use rocket::Request;
+use rocket::State;
+use rocket_contrib::templates::Template;
+use std::path::PathBuf;
 
 extern crate tree_magic;
 
-use std::fs::File;
-use std::io::ErrorKind;
-use std::path::{Path};
-use std::vec::Vec;
 use std::collections::HashMap;
 use std::error::Error;
+use std::fs::File;
+use std::io::ErrorKind;
+use std::path::Path;
+use std::vec::Vec;
 
 mod id;
 mod upload;
@@ -49,11 +51,11 @@ fn index(host: HostHeader) -> Template {
 #[get("/<id>")]
 fn get_file(id: String, config: State<ConfigState>) -> Result<Content<File>, Status> {
     let id = id.split(".").collect::<Vec<&str>>()[0];
-    let filename = Path::new(&config.storage_path).join(&id);
+    let filename = Path::new(&config.storage_dir).join(&id);
     let file = File::open(&filename);
     match file {
         Err(_) => return Err(Status::NotFound),
-        _ => ()
+        _ => (),
     };
 
     let mut mime = tree_magic::from_filepath(&filename);
@@ -62,27 +64,34 @@ fn get_file(id: String, config: State<ConfigState>) -> Result<Content<File>, Sta
         mime = "text/plain".to_string()
     }
 
-    Ok(Content(ContentType::parse_flexible(&mime).unwrap(), file.unwrap()))
+    Ok(Content(
+        ContentType::parse_flexible(&mime).unwrap(),
+        file.unwrap(),
+    ))
 }
 
 pub struct ConfigState {
-    storage_path: String,
+    storage_dir: String,
 }
 
 fn main() {
     rocket::ignite()
-        .mount("/", routes![
-                  index
-                , get_file
-                , upload::upload_post_route
-                , upload::upload_put_route
-        ])
+        .mount(
+            "/",
+            routes![
+                index,
+                get_file,
+                upload::upload_post_route,
+                upload::upload_put_route
+            ],
+        )
         .attach(Template::fairing())
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("Adding config to managed state...");
-            let storage_path = rocket.config().get_string("storage_path").unwrap();
-            Ok(rocket.manage(ConfigState {storage_path: storage_path}))
+            let storage_dir = rocket.config().get_string("storage_dir").unwrap();
+            Ok(rocket.manage(ConfigState {
+                storage_dir: storage_dir,
+            }))
         }))
         .launch();
 }
-
