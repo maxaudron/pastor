@@ -7,7 +7,7 @@ build:tags:dockerhub:
     - k8s
 
 build:
-  image: rust:1.44
+  image: rust:1.42
   stage: build
   script:
     - apt-get update
