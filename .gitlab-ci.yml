@@ -5,3 +5,19 @@ include:
 build:tags:dockerhub:
   tags:
     - k8s
+
+build:
+  image: rust:1.44
+  stage: build
+  script:
+    - apt-get update
+    - apt-get install musl-tools -y
+    - rustup default nightly && rustup update
+    - rustup target add x86_64-unknown-linux-musl --toolchain=nightly
+    - cargo build --release --target=x86_64-unknown-linux-musl
+  artifacts:
+    expose_as: "pastor-static-amd64"
+    paths:
+      - target/x86_64-unknown-linux-musl/release/pastor
+  only:
+    - tags 
