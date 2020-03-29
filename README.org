@@ -3,6 +3,7 @@
 * Table of Contents :TOC:
 - [[#description][Description]]
 - [[#features][Features]]
+  - [[#todo][TODO]]
 - [[#configuration][Configuration]]
 
 * Description
@@ -12,6 +13,12 @@ compiled binary or as a docker container containing the same.
 * Features
 + Easy deployment, no outside dependencies.
 + Solid parsing and return of mimetypes.
+
+** TODO
++ Updateing of pastes
++ Deleteing of pastes
++ Linkshortening
++ sunsetting and automated deletion
 
 * Configuration
 rocket.rs is used as a web framework and thus it's configuration structure is
