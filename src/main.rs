@@ -9,9 +9,9 @@ extern crate multipart;
 extern crate rocket;
 extern crate rocket_contrib;
 use rocket::fairing::AdHoc;
-use rocket::http::ContentType;
-use rocket::http::Status;
-use rocket::response::Content;
+use rocket::http::hyper::header::{ContentDisposition, DispositionType};
+use rocket::http::{ContentType, Status};
+use rocket::Response;
 use rocket::State;
 use rocket_contrib::templates::Template;
 
@@ -36,7 +36,7 @@ fn index(host: HostHeader) -> Template {
 }
 
 #[get("/<id>")]
-fn get_file(id: String, config: State<ConfigState>) -> Result<Content<File>, Status> {
+fn get_file(id: String, config: State<ConfigState>) -> Result<Response, Status> {
     let id = id.split(".").collect::<Vec<&str>>()[0];
     let filename = Path::new(&config.storage_dir).join(&id);
     let file = File::open(&filename);
@@ -45,17 +45,31 @@ fn get_file(id: String, config: State<ConfigState>) -> Result<Content<File>, Sta
         _ => (),
     };
 
-    let mut mime = tree_magic::from_filepath(&filename);
+    let file = file.unwrap();
 
-    match mime {
-        x if x.contains("text/") => mime = "text/plain",
-        _ => {}
+    let mime_source = tree_magic::from_filepath(&filename);
+    let mime;
+
+    match mime_source {
+        x if x.contains("text/") => mime = Some("text/plain"),
+        _ => mime = None,
     }
 
-    Ok(Content(
-        ContentType::parse_flexible(&mime).unwrap(),
-        file.unwrap(),
-    ))
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+    res.set_header(ContentDisposition {
+        disposition: DispositionType::Inline,
+        parameters: vec![],
+    });
+
+    match mime {
+        Some(m) => res.set_header(ContentType::parse_flexible(&m).unwrap()),
+        None => false,
+    };
+
+    res.set_streamed_body(file);
+
+    Ok(res)
 }
 
 pub struct ConfigState {
