@@ -18,10 +18,15 @@ Files
  Upload
 
   Upload a single file.
-  The first token is needed if you want to change or delete the paste later:
   -----------------------------------------------------------------------------------
   $ curl --upload-file vim.png https://{{ url }}/
-  a2fm8 https://{{ url }}/xc78CK
+  https://{{ url }}/xc78CK
+  -----------------------------------------------------------------------------------
+
+  Upload multiple files.
+  -----------------------------------------------------------------------------------
+  $ curl -F a=@vim.png b=@vim2.png https://{{ url }}/
+  https://{{ url }}/xc78CK
   -----------------------------------------------------------------------------------
   
 </pre>
