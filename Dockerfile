@@ -27,9 +27,11 @@ COPY --from=cargo-build /work/target/x86_64-unknown-linux-musl/release/pastor /u
 COPY --from=cargo-build /work/templates /templates
 
 ENV ROCKET_TEMPLATE_DIR /templates
+ENV ROCKET_STORAGE_DIR /storage
 
 RUN apk add openssl
 RUN adduser pastor -D
+RUN mkdir /storage && chown pastor templates storage
 
 USER pastor
 

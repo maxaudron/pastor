@@ -7,9 +7,10 @@ edition = "2018"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tree_magic = "0.2"
+tree_magic = { version = "0.2", features = ["staticmime"] }
 rocket = "0.4"
-nanoid = "^0.3.0"
+nanoid = "^0.3"
+multipart = "0.16"
 
 [dependencies.rocket_contrib]
 version = "0.4.2"
