@@ -10,6 +10,10 @@
 pastor is a simple pastebin written in rust. it can be used as a single staticly
 compiled binary or as a docker container containing the same.
 
+#+BEGIN_SRC shell
+docker run -p 80:8000 -v <storage path>:/storage cocainefarm/pastor:latest
+#+END_SRC
+
 * Features
 + Easy deployment, no outside dependencies.
 + Solid parsing and return of mimetypes.
