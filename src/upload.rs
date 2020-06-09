@@ -68,7 +68,12 @@ pub fn upload(
                         let filename = Path::new(&config.storage_dir).join(&id);
                         let url = format!("http://{host}/{id}\n", host = host.0, id = id);
 
-                        entry.data.save().memory_threshold(0).with_path(filename);
+                        entry
+                            .data
+                            .save()
+                            .size_limit(None)
+                            .memory_threshold(0)
+                            .with_path(filename);
 
                         urls.extend(vec![url]);
                     }
@@ -77,12 +82,9 @@ pub fn upload(
 
             Ok::<String, Status>(urls.join(""))
         }
-        _ => {
-            println!("AAAAAAA");
-            match paste.stream_to_file(&filename) {
-                Ok(_) => Ok(url),
-                Err(_) => Err(Status::InternalServerError),
-            }
-        }
+        _ => match paste.stream_to_file(&filename) {
+            Ok(_) => Ok(url),
+            Err(_) => Err(Status::InternalServerError),
+        },
     }
 }

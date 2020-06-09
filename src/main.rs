@@ -89,6 +89,7 @@ fn main() {
         )
         .attach(Template::fairing())
         .attach(AdHoc::on_attach("Set Config", |rocket| {
+            println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
             let storage_dir = rocket.config().get_string("storage_dir").unwrap();
             Ok(rocket.manage(ConfigState { storage_dir }))
