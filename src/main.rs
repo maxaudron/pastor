@@ -51,7 +51,7 @@ fn get_file(id: String, config: State<ConfigState>) -> Result<Response, Status> 
     let mime;
 
     match mime_source {
-        x if x.contains("text/") => mime = Some("text/plain"),
+        x if x.contains("text/") => mime = Some("text/plain; charset=utf-8"),
         _ => mime = None,
     }
 
