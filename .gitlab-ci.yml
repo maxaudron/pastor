@@ -1,6 +1,6 @@
 include:
   - project: 'cocainefarm/templates/ci'
-    file: '/container.tags.yml'
+    file: '/container.tags.yaml'
 
 build:
   image: rust:1.42
