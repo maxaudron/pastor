@@ -1,10 +1,6 @@
 include:
   - project: 'cocainefarm/templates/ci'
-    file: '/dockerhub.yml'
-
-build:tags:dockerhub:
-  tags:
-    - k8s
+    file: '/container.tags.yml'
 
 build:
   image: rust:1.42
