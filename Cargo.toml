@@ -9,7 +9,7 @@ edition = "2018"
 [dependencies]
 tree_magic = { version = "0.2", features = ["staticmime"] }
 rocket = "0.4"
-nanoid = "^0.3"
+rand = "0.7"
 multipart = "0.16"
 
 [dependencies.rocket_contrib]

@@ -1,7 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-
-#[macro_use]
-extern crate nanoid;
+#![feature(proc_macro_hygiene, decl_macro, const_fn)]
 
 extern crate multipart;
 
@@ -22,6 +19,7 @@ use std::fs::File;
 use std::path::Path;
 use std::vec::Vec;
 
+mod dict;
 mod id;
 mod upload;
 mod util;
