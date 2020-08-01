@@ -9,40 +9,7 @@ use multipart::server::Multipart;
 use crate::id;
 use crate::HostHeader;
 
-#[post("/", data = "<paste>")]
-pub fn upload_post_route(
-    cont_type: &ContentType,
-    paste: Data,
-    config: State<crate::ConfigState>,
-    host: HostHeader,
-) -> Result<String, Status> {
-    upload(Some(cont_type), paste, config, host)
-}
-
-#[put("/<file>", data = "<paste>")]
-#[allow(unused_variables)]
-pub fn upload_put_route_content_type(
-    cont_type: &ContentType,
-    paste: Data,
-    file: String,
-    config: State<crate::ConfigState>,
-    host: HostHeader,
-) -> Result<String, Status> {
-    upload(Some(cont_type), paste, config, host)
-}
-
-#[put("/<file>", data = "<paste>")]
-#[allow(unused_variables)]
-pub fn upload_put_route(
-    paste: Data,
-    file: String,
-    config: State<crate::ConfigState>,
-    host: HostHeader,
-) -> Result<String, Status> {
-    upload(None, paste, config, host)
-}
-
-pub fn upload(
+pub fn store(
     cont_type: Option<&ContentType>,
     paste: Data,
     config: State<crate::ConfigState>,
