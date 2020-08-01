@@ -86,6 +86,18 @@ fn main() {
             ],
         )
         .attach(Template::fairing())
+        .attach(Template::custom(|engine| {
+            match std::env::var("ROCKET_INDEX_TEMPLATE") {
+                Ok(template) => engine
+                    .tera
+                    .add_template_file(template, Some("index"))
+                    .unwrap(),
+                Err(_) => engine
+                    .tera
+                    .add_raw_template("index", INDEX_TEMPLATE)
+                    .unwrap(),
+            };
+        }))
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");

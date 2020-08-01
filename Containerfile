@@ -24,14 +24,15 @@ RUN cargo build --release --target=x86_64-unknown-linux-musl
 FROM alpine:latest
 
 COPY --from=cargo-build /work/target/x86_64-unknown-linux-musl/release/pastor /usr/local/bin
-COPY --from=cargo-build /work/templates /templates
-
-ENV ROCKET_TEMPLATE_DIR /templates
-ENV ROCKET_STORAGE_DIR /storage
 
 RUN apk add openssl
 RUN adduser pastor -D
-RUN mkdir /storage && chown pastor templates storage
+
+RUN mkdir /storage /templates && chown pastor templates storage
+VOLUME /storage /templates
+
+ENV ROCKET_TEMPLATE_DIR /templates
+ENV ROCKET_STORAGE_DIR /storage
 
 USER pastor
 
