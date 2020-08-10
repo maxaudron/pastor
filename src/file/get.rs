@@ -20,3 +20,16 @@ pub fn get(filename: std::path::PathBuf) -> Result<(File, Option<&'static str>),
 
     Ok((file, mime))
 }
+
+pub fn get_db(id: &String, db: &sled::Db) -> Result<crate::Paste, Status> {
+    match db.get(id) {
+        Ok(item) => match item {
+            Some(item) => {
+                let paste: crate::Paste = bincode::deserialize(&item).unwrap();
+                return Ok(paste);
+            }
+            None => return Err(Status::NotFound),
+        },
+        Err(_) => return Err(Status::InternalServerError),
+    }
+}

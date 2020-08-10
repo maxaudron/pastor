@@ -4,6 +4,7 @@ port = 8000
 keep_alive = 5
 log = "normal"
 storage_dir = "./storage"
+database_file = "./storage/db"
 limits = { forms = 6710886400, png = 6710886400 }
 
 [production]
@@ -12,4 +13,5 @@ port = 8000
 keep_alive = 5
 log = "critical"
 storage_path = "/storage"
+database_file = "/storage/db"
 limits = { forms = 6710886400 }
