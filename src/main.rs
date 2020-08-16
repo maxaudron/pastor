@@ -157,12 +157,12 @@ fn main() {
                 .config()
                 .get_string("storage_dir")
                 .unwrap_or("/storage".to_string());
-            let database_file = rocket
+            let database_dir = rocket
                 .config()
-                .get_string("database_file")
+                .get_string("database_dir")
                 .unwrap_or("/storage/db".to_string());
 
-            let db = sled::open(database_file).unwrap();
+            let db = sled::open(database_dir).unwrap();
 
             Ok(rocket.manage(ConfigState { storage_dir, db }))
         }))
