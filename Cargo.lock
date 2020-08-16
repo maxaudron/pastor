@@ -185,6 +185,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "bstr"
+version = "0.2.13"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "31accafdb70df7871592c058eca3985b71104e15ac32f64706022c58867da931"
+dependencies = [
+ "memchr 2.3.3",
+]
+
+[[package]]
 name = "buf_redux"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -221,6 +230,16 @@ dependencies = [
  "num-integer",
  "num-traits",
  "time",
+]
+
+[[package]]
+name = "chrono-tz"
+version = "0.5.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "65d96be7c3e993c9ee4356442db24ba364c924b6b8331866be6b6952bfe74b9d"
+dependencies = [
+ "chrono",
+ "parse-zoneinfo",
 ]
 
 [[package]]
@@ -503,6 +522,30 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "9b919933a397b79c37e33b77bb2aa3dc8eb6e165ad809e58ff75bc7db2e34574"
 
 [[package]]
+name = "globset"
+version = "0.4.5"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "7ad1da430bd7281dde2576f44c84cc3f0f7b475e7202cd503042dff01a8c8120"
+dependencies = [
+ "aho-corasick",
+ "bstr",
+ "fnv",
+ "log 0.4.11",
+ "regex",
+]
+
+[[package]]
+name = "globwalk"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "178270263374052c40502e9f607134947de75302c1348d1a0e31db67c1691446"
+dependencies = [
+ "bitflags",
+ "ignore",
+ "walkdir",
+]
+
+[[package]]
 name = "groupable"
 version = "0.2.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -586,6 +629,24 @@ dependencies = [
  "matches",
  "unicode-bidi",
  "unicode-normalization",
+]
+
+[[package]]
+name = "ignore"
+version = "0.4.16"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "22dcbf2a4a289528dbef21686354904e1c694ac642610a9bff9e7df730d9ec72"
+dependencies = [
+ "crossbeam-utils",
+ "globset",
+ "lazy_static",
+ "log 0.4.11",
+ "memchr 2.3.3",
+ "regex",
+ "same-file",
+ "thread_local",
+ "walkdir",
+ "winapi-util",
 ]
 
 [[package]]
@@ -1045,6 +1106,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "parse-zoneinfo"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c705f256449c60da65e11ff6626e0c16a0a0b96aaa348de61376b249bc340f41"
+dependencies = [
+ "regex",
+]
+
+[[package]]
 name = "pastor"
 version = "0.5.1"
 dependencies = [
@@ -1057,6 +1127,7 @@ dependencies = [
  "serde",
  "serde_derive",
  "sled",
+ "tera 1.5.0",
  "tree_magic",
 ]
 
@@ -1490,7 +1561,7 @@ dependencies = [
  "rocket",
  "serde",
  "serde_json",
- "tera",
+ "tera 0.11.20",
 ]
 
 [[package]]
@@ -1709,8 +1780,30 @@ dependencies = [
  "serde",
  "serde_json",
  "slug",
- "unic-segment",
+ "unic-segment 0.7.0",
  "url",
+]
+
+[[package]]
+name = "tera"
+version = "1.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "1381c83828bedd5ce4e59473110afa5381ffe523406d9ade4b77c9f7be70ff9a"
+dependencies = [
+ "chrono",
+ "chrono-tz",
+ "globwalk",
+ "humansize",
+ "lazy_static",
+ "percent-encoding 2.1.0",
+ "pest",
+ "pest_derive",
+ "rand 0.7.3",
+ "regex",
+ "serde",
+ "serde_json",
+ "slug",
+ "unic-segment 0.9.0",
 ]
 
 [[package]]
@@ -1821,7 +1914,16 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ce36d3f7ce754afdbccccf8ff0dd0134e50fb44aaae579f96218856e9e5dbd1e"
 dependencies = [
- "unic-char-range",
+ "unic-char-range 0.7.0",
+]
+
+[[package]]
+name = "unic-char-property"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "a8c57a407d9b6fa02b4795eb81c5b6652060a15a7903ea981f3d723e6c0be221"
+dependencies = [
+ "unic-char-range 0.9.0",
 ]
 
 [[package]]
@@ -1831,10 +1933,22 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "d9ab85fab42ad1b26cafc03bf891f69cb4d6e15f491030e89a0122197baa8ae8"
 
 [[package]]
+name = "unic-char-range"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "0398022d5f700414f6b899e10b8348231abf9173fa93144cbc1a43b9793c1fbc"
+
+[[package]]
 name = "unic-common"
 version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ff8d4a7ade929ef7d971e16ced21a8cd56a63869aa6032dfb8cb083cf7d077bf"
+
+[[package]]
+name = "unic-common"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "80d7ff825a6a654ee85a63e80f92f054f904f21e7d12da4e22f9834a4aaa35bc"
 
 [[package]]
 name = "unic-segment"
@@ -1842,7 +1956,16 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c9ca47cbb09fb5fcd066b5867d11dc528302fa465277882797d6a836e1ee6f9e"
 dependencies = [
- "unic-ucd-segment",
+ "unic-ucd-segment 0.7.0",
+]
+
+[[package]]
+name = "unic-segment"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e4ed5d26be57f84f176157270c112ef57b86debac9cd21daaabbe56db0f88f23"
+dependencies = [
+ "unic-ucd-segment 0.9.0",
 ]
 
 [[package]]
@@ -1851,9 +1974,20 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48f1a08ce0409a9e391b88d1930118eec48af12742fc538bcec55f775865776e"
 dependencies = [
- "unic-char-property",
- "unic-char-range",
- "unic-ucd-version",
+ "unic-char-property 0.7.0",
+ "unic-char-range 0.7.0",
+ "unic-ucd-version 0.7.0",
+]
+
+[[package]]
+name = "unic-ucd-segment"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "2079c122a62205b421f499da10f3ee0f7697f012f55b675e002483c73ea34700"
+dependencies = [
+ "unic-char-property 0.9.0",
+ "unic-char-range 0.9.0",
+ "unic-ucd-version 0.9.0",
 ]
 
 [[package]]
@@ -1862,7 +1996,16 @@ version = "0.7.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "cf1f5e6c6c53c2d0ece4a5964bc55fcff8602153063cb4fab20958ff32998ff6"
 dependencies = [
- "unic-common",
+ "unic-common 0.7.0",
+]
+
+[[package]]
+name = "unic-ucd-version"
+version = "0.9.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96bd2f2237fe450fcd0a1d2f5f4e91711124f7857ba2e964247776ebeeb7b0c4"
+dependencies = [
+ "unic-common 0.9.0",
 ]
 
 [[package]]

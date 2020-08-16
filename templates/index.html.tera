@@ -17,16 +17,20 @@ Files
 -----
  Upload
 
-  Upload a single file.
-  -----------------------------------------------------------------------------------
-  $ curl --upload-file vim.png https://{{ url }}/
-  https://{{ url }}/xc78CK
-  -----------------------------------------------------------------------------------
-
-  Upload multiple files.
+  Upload files:
   -----------------------------------------------------------------------------------
   $ curl -F a=@vim.png b=@vim2.png https://{{ url }}/
-  https://{{ url }}/xc78CK
+  https://{{ url }}/picturedsalters aloofgremlins
   -----------------------------------------------------------------------------------
-  
+  The second string is a token needed to authenticate for
+  modifying or deleteing your uploads.
+
+ Delete
+
+  Delete file:
+  -----------------------------------------------------------------------------------
+  $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
+  -----------------------------------------------------------------------------------
+                             
+                             
 </pre>

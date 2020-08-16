@@ -8,11 +8,9 @@ use rocket::fairing::AdHoc;
 use rocket::http::hyper::header::{ContentDisposition, DispositionType};
 use rocket::http::{ContentType, Status};
 use rocket::{Data, Response, State};
-use rocket_contrib::templates::Template;
 
 extern crate tree_magic;
 
-use std::collections::HashMap;
 use std::vec::Vec;
 
 use chrono::Utc;
@@ -25,11 +23,11 @@ mod util;
 use util::HostHeader;
 
 #[get("/")]
-fn index(host: HostHeader) -> Template {
-    let mut context = HashMap::<&str, &str>::new();
+fn index(host: HostHeader, config: State<ConfigState>) -> String {
+    let mut context = tera::Context::new();
     context.insert("url", host.0);
 
-    Template::render("index", context)
+    config.tera.render("index", &context).unwrap()
 }
 
 #[get("/<id>")]
@@ -38,11 +36,11 @@ fn get(id: String, config: State<ConfigState>) -> Result<Response, Status> {
     let now = Utc::now().timestamp();
 
     if paste.expires < now {
-        file::delete(file::build_path(id, config))?;
+        file::delete(file::build_path(&id, &config))?;
         return Err(Status::Gone);
     }
 
-    let (file, mime) = file::get(file::build_path(id, config))?;
+    let (file, mime) = file::get(file::build_path(&id, &config))?;
 
     let mut res = Response::new();
     res.set_status(Status::Ok);
@@ -69,8 +67,9 @@ fn delete(id: String, token: String, config: State<ConfigState>) -> Result<Statu
         return Err(Status::Forbidden);
     }
 
-    file::delete(file::build_path(id, config))?;
-    return Err(Status::Gone);
+    file::delete(file::build_path(&id, &config))?;
+    config.db.remove(&id).unwrap();
+    return Ok(Status::Ok);
 }
 
 #[post("/?<token>", data = "<data>")]
@@ -119,6 +118,7 @@ pub fn create(
 pub struct ConfigState {
     storage_dir: String,
     db: sled::Db,
+    tera: tera::Tera,
 }
 
 #[macro_use]
@@ -132,23 +132,11 @@ pub struct Paste {
     token: String,
 }
 
-static INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
+const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
 
 fn main() {
     rocket::ignite()
         .mount("/", routes![index, get, create, delete])
-        .attach(Template::custom(|engine| {
-            match std::env::var("ROCKET_INDEX_TEMPLATE") {
-                Ok(template) => engine
-                    .tera
-                    .add_template_file(template, Some("index"))
-                    .unwrap(),
-                Err(_) => engine
-                    .tera
-                    .add_raw_template("index", INDEX_TEMPLATE)
-                    .unwrap(),
-            };
-        }))
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
@@ -164,7 +152,31 @@ fn main() {
 
             let db = sled::open(database_dir).unwrap();
 
-            Ok(rocket.manage(ConfigState { storage_dir, db }))
+            let template_dir = rocket
+                .config()
+                .get_string("template_dir")
+                .unwrap_or("/templates/*".to_string());
+
+            let mut tera = tera::Tera::parse(&template_dir).unwrap();
+
+            match std::env::var("ROCKET_INDEX_TEMPLATE") {
+                Ok(template) => {
+                    println!("Using external template");
+                    tera.add_template_file(template, Some("index")).unwrap();
+                }
+                Err(_) => {
+                    println!("Using embedded template");
+                    tera.add_raw_template("index", INDEX_TEMPLATE).unwrap();
+                }
+            };
+
+            tera.build_inheritance_chains().unwrap();
+
+            Ok(rocket.manage(ConfigState {
+                storage_dir,
+                db,
+                tera,
+            }))
         }))
         .launch();
 }
