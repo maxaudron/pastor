@@ -1,6 +1,6 @@
 [package]
 name = "pastor"
-version = "0.5.1"
+version = "0.5.2"
 authors = ["Max Audron <audron@cocaine.farm>"]
 edition = "2018"
 
@@ -19,5 +19,5 @@ multipart = "0.17"
 tera = "1.5"
 
 [dependencies.rocket_contrib]
-version = "0.4.0"
+version = "0.5.2"
 features = ["tera_templates"]
