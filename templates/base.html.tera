@@ -4,9 +4,6 @@
     <meta charset="utf-8" />
     <title>{% block title %}{% endblock title %}</title>
     <link rel="stylesheet" href="styles/main.css">
-    <link rel="stylesheet" href="vendor/highlight/styles/gruvbox-dark.css">
-    <script src="vendor/highlight/highlight.pack.js"></script>
-    <script>hljs.highlightAll();</script>
   </head>
   <body>
     {% block content %}{% endblock content %}

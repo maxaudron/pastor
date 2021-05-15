@@ -1,20 +1,11 @@
 body {
-    background-color: #282828;
-    color: #ebdbb2;
+    background-color: #2d2d2d;
+    color: #d3d0c8;
     font-family: "Roboto", "Fira Sans", sans-serif;
 }
 
 a {
-    color: #83a598;
-}
-
-pre {
-    margin: 0;
-}
-
-code {
-    padding-top: 0 !important;
-    padding-bottom: 0 !important;
+    color: #5d89b5;
 }
 
 .index {

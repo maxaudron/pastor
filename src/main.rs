@@ -24,6 +24,12 @@ mod util;
 use rocket_contrib::serve::StaticFiles;
 use std::collections::HashMap;
 use std::io::Read;
+use syntect::easy::HighlightLines;
+use syntect::highlighting::ThemeSet;
+use syntect::html::{
+    highlighted_html_for_string, styled_line_to_highlighted_html, IncludeBackground,
+};
+use syntect::parsing::SyntaxSet;
 use util::HostHeader;
 
 #[get("/")]
@@ -62,10 +68,26 @@ fn retrieve(
             file.read_to_string(&mut buffer)
                 .map_err(|_| Status::InternalServerError)?;
 
+            // Load these once at the start of your program TODO move
+            let ss = SyntaxSet::load_defaults_newlines();
+            let ts = ThemeSet::load_defaults();
+
+            let language = l[..1].to_uppercase() + &l.to_lowercase()[1..];
+            let syntax = ss.find_syntax_by_name(&language).unwrap_or_else(|| {
+                ss.find_syntax_by_first_line(&buffer)
+                    .unwrap_or_else(|| ss.find_syntax_plain_text())
+            });
+            let html = highlighted_html_for_string(
+                &buffer,
+                &ss,
+                syntax,
+                &ts.themes["base16-eighties.dark"],
+            );
+
             let mut context: HashMap<&str, String> = HashMap::new();
             context.insert("id", id.to_string());
             context.insert("lang", l);
-            context.insert("content", buffer);
+            context.insert("content", html);
 
             let t = Template::render("retrieve", &context);
             Ok(GetReturnType::Template(t))
