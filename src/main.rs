@@ -59,7 +59,8 @@ fn retrieve(
         Some(l) if !l.is_empty() => {
             let mut buffer = String::new();
             // Could a better error be returned?
-            file.read_to_string(&mut buffer).map_err(|_| Status::ImATeapot)?;
+            file.read_to_string(&mut buffer)
+                .map_err(|_| Status::ImATeapot)?;
 
             let mut context: HashMap<&str, String> = HashMap::new();
             context.insert("id", id.to_string());

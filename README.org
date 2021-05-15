@@ -32,4 +32,4 @@ By default the container binds to ~0.0.0.0~ and exposes port 8000. This can be
 changed with the env vars ~$ROCKET_ADDRESS~ and ~$ROCKET_PORT~ respectively.
 
 Pastes are stored in ~$ROCKET_STORAGE_DIR~. The index page and the retrieve page
-(if ~?lang~ is used) are using tera templates in ~/templates~.
+(if ~?lang~ is used) are using tera templates in ~$ROCKET_TEMPLATE_DIR~.
