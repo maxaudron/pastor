@@ -1,12 +1,21 @@
-<pre>
+{% extends "base" %}
+
+{% block title %}
+Pastor
+{% endblock title %}
+
+{% block content %}
+    <div class="index">
+        <h1>Pastor</h1>
+        <pre><code class="code-content plaintext">
 
 
-                             _ __   __ _ ___| |_ ___  _ __ 
+                             _ __   __ _ ___| |_ ___  _ __
                             | '_ \ / _` / __| __/ _ \| '__|
                             | |_) | (_| \__ \ || (_) | |
                             | .__/ \__,_|___/\__\___/|_|
                             |_|
-                       
+
                        The pastebin that hopefully doesn't suck
 
 
@@ -25,12 +34,27 @@ Files
   The second string is a token needed to authenticate for
   modifying or deleteing your uploads.
 
+ Retrieve
+
+  Retrieve file:
+  -----------------------------------------------------------------------------------
+  GET https://{{ url }}/picturedsalters
+  -----------------------------------------------------------------------------------
+
+  View file with syntax highlighting:
+  -----------------------------------------------------------------------------------
+  GET https://{{ url }}/picturedsalters?lang=rust
+  GET https://{{ url }}/picturedsalters?lang=auto (attempts detection)
+  -----------------------------------------------------------------------------------
+
  Delete
 
   Delete file:
   -----------------------------------------------------------------------------------
   $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
   -----------------------------------------------------------------------------------
-                             
-                             
-</pre>
+
+
+        </code></pre>
+    </div>
+{% endblock content %}

@@ -8,6 +8,7 @@ use rocket::fairing::AdHoc;
 use rocket::http::hyper::header::{ContentDisposition, DispositionType};
 use rocket::http::{ContentType, Status};
 use rocket::{Data, Response, State};
+use rocket_contrib::templates::Template;
 
 extern crate tree_magic;
 
@@ -20,18 +21,30 @@ mod file;
 mod id;
 mod util;
 
+use rocket_contrib::serve::StaticFiles;
+use std::collections::HashMap;
+use std::io::Read;
 use util::HostHeader;
 
 #[get("/")]
-fn index(host: HostHeader, config: State<ConfigState>) -> String {
-    let mut context = tera::Context::new();
-    context.insert("url", host.0);
-
-    config.tera.render("index", &context).unwrap()
+fn index(host: HostHeader) -> Template {
+    let mut context: HashMap<&str, &str> = HashMap::new();
+    context.insert("url", &host.0);
+    Template::render("index", &context)
 }
 
-#[get("/<id>")]
-fn get(id: String, config: State<ConfigState>) -> Result<Response, Status> {
+#[derive(Responder)]
+enum GetReturnType<'a> {
+    Response(Response<'a>),
+    Template(Template),
+}
+
+#[get("/<id>?<lang>")]
+fn retrieve(
+    id: String,
+    lang: Option<String>,
+    config: State<ConfigState>,
+) -> Result<GetReturnType, Status> {
     let paste = file::get_db(&id, &config.db)?;
     let now = Utc::now().timestamp();
 
@@ -40,23 +53,39 @@ fn get(id: String, config: State<ConfigState>) -> Result<Response, Status> {
         return Err(Status::Gone);
     }
 
-    let (file, mime) = file::get(file::build_path(&id, &config))?;
+    let (mut file, mime) = file::get(file::build_path(&id, &config))?;
 
-    let mut res = Response::new();
-    res.set_status(Status::Ok);
-    res.set_header(ContentDisposition {
-        disposition: DispositionType::Inline,
-        parameters: vec![],
-    });
+    match lang {
+        Some(l) if !l.is_empty() => {
+            let mut buffer = String::new();
+            // Could a better error be returned?
+            file.read_to_string(&mut buffer).map_err(|_| Status::ImATeapot)?;
 
-    match mime {
-        Some(m) => res.set_header(ContentType::parse_flexible(&m).unwrap()),
-        None => false,
-    };
+            let mut context: HashMap<&str, String> = HashMap::new();
+            context.insert("id", id.to_string());
+            context.insert("lang", l);
+            context.insert("content", buffer);
 
-    res.set_streamed_body(file);
+            let t = Template::render("retrieve", &context);
+            Ok(GetReturnType::Template(t))
+        }
+        None | _ => {
+            let mut res = Response::new();
+            res.set_status(Status::Ok);
+            res.set_header(ContentDisposition {
+                disposition: DispositionType::Inline,
+                parameters: vec![],
+            });
 
-    Ok(res)
+            match mime {
+                Some(m) => res.set_header(ContentType::parse_flexible(&m).unwrap()),
+                None => false,
+            };
+
+            res.set_streamed_body(file);
+            Ok(GetReturnType::Response(res))
+        }
+    }
 }
 
 #[delete("/<id>?<token>")]
@@ -89,7 +118,7 @@ pub fn create(
     let mut urls = Vec::new();
     for (id, token) in ids {
         urls.push(format!(
-            "https://{host}/{id} {token}",
+            "https://{host}/{id} {token}\n",
             host = host.0,
             id = id,
             token = token
@@ -98,27 +127,9 @@ pub fn create(
     Ok(urls.join("\n"))
 }
 
-// #[put("/<id>?<token>", data = "<data>")]
-// pub fn update(
-//     cont_type: &ContentType,
-//     data: Data,
-//     token: String,
-//     config: State<crate::ConfigState>,
-//     host: HostHeader,
-// ) -> Result<(), Status> {
-//     if !cont_type.is_form_data() {
-//         return Err(Status::MethodNotAllowed);
-//     }
-//
-//     println!("token: {:}", token);
-//
-//     file::update(cont_type, data, config)
-// }
-
 pub struct ConfigState {
     storage_dir: String,
     db: sled::Db,
-    tera: tera::Tera,
 }
 
 #[macro_use]
@@ -132,11 +143,14 @@ pub struct Paste {
     token: String,
 }
 
-const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
-
 fn main() {
     rocket::ignite()
-        .mount("/", routes![index, get, create, delete])
+        .mount("/", routes![index, retrieve, create, delete])
+        .mount(
+            "/",
+            StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")),
+        )
+        .attach(Template::fairing())
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
@@ -152,31 +166,7 @@ fn main() {
 
             let db = sled::open(database_dir).unwrap();
 
-            let template_dir = rocket
-                .config()
-                .get_string("template_dir")
-                .unwrap_or("/templates/*".to_string());
-
-            let mut tera = tera::Tera::parse(&template_dir).unwrap();
-
-            match std::env::var("ROCKET_INDEX_TEMPLATE") {
-                Ok(template) => {
-                    println!("Using external template");
-                    tera.add_template_file(template, Some("index")).unwrap();
-                }
-                Err(_) => {
-                    println!("Using embedded template");
-                    tera.add_raw_template("index", INDEX_TEMPLATE).unwrap();
-                }
-            };
-
-            tera.build_inheritance_chains().unwrap();
-
-            Ok(rocket.manage(ConfigState {
-                storage_dir,
-                db,
-                tera,
-            }))
+            Ok(rocket.manage(ConfigState { storage_dir, db }))
         }))
         .launch();
 }

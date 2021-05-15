@@ -1,0 +1,14 @@
+{% extends "base" %}
+
+{% block title %}
+Pastor - {{ id }}
+{% endblock title %}
+
+{% block content %}
+    <div class="retrieve">
+        <a href="/{{ id }}">Raw</a>
+        {% if lang == "auto" %} <pre><code class="code-content"> {% else %} <pre><code class="code-content lang-{{ lang }}"> {% endif %}
+{{ content }}
+        </code></pre>
+    </div>
+{% endblock content %}
