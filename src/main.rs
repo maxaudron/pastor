@@ -1,4 +1,4 @@
-#![feature(proc_macro_hygiene, decl_macro, const_fn)]
+#![feature(proc_macro_hygiene, decl_macro)]
 extern crate multipart;
 
 #[macro_use]
