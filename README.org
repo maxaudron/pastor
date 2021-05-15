@@ -7,7 +7,7 @@
 - [[#configuration][Configuration]]
 
 * Description
-pastor is a simple pastebin written in rust. it can be used as a single staticly
+pastor is a simple pastebin written in rust. it can be used as a single statically
 compiled binary or as a docker container containing the same.
 
 #+BEGIN_SRC shell
@@ -17,11 +17,11 @@ docker run -p 80:8000 -v <storage path>:/storage cocainefarm/pastor:latest
 * Features
 + Easy deployment, no outside dependencies.
 + Solid parsing and return of mimetypes.
++ Optional syntax highlighting
 
 ** TODO
-+ Updateing of pastes
-+ Deleteing of pastes
-+ Linkshortening
++ Updating of pastes
++ Link shortening
 + sunsetting and automated deletion
 
 * Configuration
@@ -29,7 +29,7 @@ rocket.rs is used as a web framework and thus it's configuration structure is
 used. Detail can be found [[https://rocket.rs/v0.4/guide/configuration/#configuration][here]]
 
 By default the container binds to ~0.0.0.0~ and exposes port 8000. This can be
-changed with the env vars ~$ROCKET_ADDRESS~ and ~$ROCKET_PORT~ respectivly.
+changed with the env vars ~$ROCKET_ADDRESS~ and ~$ROCKET_PORT~ respectively.
 
-Pastes are stored in ~$ROCKET_STORAGE_DIR~. The index page is using a tera template ~index.html.tera~
-in ~$ROCKET_TEMPLATE_DIR~
+Pastes are stored in ~$ROCKET_STORAGE_DIR~. The index page and the retrieve page
+(if ~?lang~ is used) are using tera templates in ~/templates~.

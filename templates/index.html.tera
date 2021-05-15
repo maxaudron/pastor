@@ -1,12 +1,11 @@
 {% extends "base" %}
 
 {% block title %}
-Pastor
+pastor
 {% endblock title %}
 
 {% block content %}
     <div class="index">
-        <h1>Pastor</h1>
         <pre><code class="code-content plaintext">
 
 
