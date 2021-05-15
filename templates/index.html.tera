@@ -5,8 +5,8 @@ pastor
 {% endblock title %}
 
 {% block content %}
-    <div class="index">
-        <pre><code class="code-content plaintext">
+    <div>
+        <pre><code>
 
 
                              _ __   __ _ ___| |_ ___  _ __

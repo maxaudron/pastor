@@ -8,10 +8,6 @@ a {
     color: #5d89b5;
 }
 
-.index {
-    font-family: "Roboto", "Fira Sans", sans-serif;
-}
-
-.code-content {
+pre {
     font-family: "JetBrains Mono", "Fira Code", monospace;
 }

@@ -5,9 +5,9 @@ pastor - {{ id }}
 {% endblock title %}
 
 {% block content %}
-    <div class="retrieve">
+    <div>
         <a href="/{{ id }}">Raw</a>
-        <div class="code-content">
+        <div>
             {{ content|safe }}
         </div>
     </div>
