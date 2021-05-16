@@ -3,7 +3,6 @@ extern crate multipart;
 
 #[macro_use]
 extern crate rocket;
-extern crate rocket_contrib;
 use rocket::fairing::AdHoc;
 use rocket::http::hyper::header::{ContentDisposition, DispositionType};
 use rocket::http::{ContentType, Status};
@@ -21,8 +20,8 @@ mod id;
 mod util;
 
 use rocket::response::Body;
-use rocket_contrib::serve::StaticFiles;
 use std::io::{Cursor, Read};
+use std::path::PathBuf;
 use syntect::highlighting::ThemeSet;
 use syntect::parsing::SyntaxSet;
 use tera::Tera;
@@ -32,15 +31,32 @@ use util::HostHeader;
 fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
     let mut context = tera::Context::new();
     context.insert("url", host.0);
-    let s = config.tera.render("index", &context).unwrap();
+    let rendered_template = config.tera.render("index", &context).unwrap();
 
     let mut res = Response::new();
     res.set_status(Status::Ok);
     res.set_header(ContentType::HTML);
-    let size = s.len() as u64;
-    let body = Body::Sized(Cursor::new(s), size);
+    let size = rendered_template.len() as u64;
+    let body = Body::Sized(Cursor::new(rendered_template), size);
     res.set_raw_body(body);
     Ok(res)
+}
+
+#[get("/static/<path..>")]
+fn static_file<'a>(path: PathBuf) -> Option<Response<'a>> {
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+
+    match path.to_str() {
+        Some("styles/main.css") => {
+            res.set_header(ContentType::CSS);
+            let size = MAIN_CSS.len() as u64;
+            let body = Body::Sized(Cursor::new(MAIN_CSS), size);
+            res.set_raw_body(body);
+            Some(res)
+        }
+        _ => None,
+    }
 }
 
 #[get("/<id>?<lang>")]
@@ -93,11 +109,11 @@ fn retrieve(
             context.insert("id", &id);
             context.insert("lang", &l);
             context.insert("content", &html);
-            let s = config.tera.render("retrieve", &context).unwrap();
+            let rendered_template = config.tera.render("retrieve", &context).unwrap();
 
             res.set_header(ContentType::HTML);
-            let size = s.len() as u64;
-            let body = Body::Sized(Cursor::new(s), size);
+            let size = rendered_template.len() as u64;
+            let body = Body::Sized(Cursor::new(rendered_template), size);
             res.set_raw_body(body);
             Ok(res)
         }
@@ -173,13 +189,11 @@ const BASE_TEMPLATE: &str = include_str!("../templates/base.html.tera");
 const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
 const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
 
+const MAIN_CSS: &str = include_str!("../static/styles/main.css");
+
 fn main() {
     rocket::ignite()
-        .mount("/", routes![index, retrieve, create, delete])
-        .mount(
-            "/",
-            StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")),
-        )
+        .mount("/", routes![index, retrieve, create, delete, static_file])
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
