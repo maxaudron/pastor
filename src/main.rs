@@ -228,10 +228,12 @@ fn main() {
                 }
                 Err(_) => {
                     println!("Using embedded template");
-                    tera.add_raw_template("base", BASE_TEMPLATE).unwrap();
-                    tera.add_raw_template("index", INDEX_TEMPLATE).unwrap();
-                    tera.add_raw_template("retrieve", RETRIEVE_TEMPLATE)
-                        .unwrap();
+                    tera.add_raw_templates(vec![
+                        ("base", BASE_TEMPLATE),
+                        ("index", INDEX_TEMPLATE),
+                        ("retrieve", RETRIEVE_TEMPLATE),
+                    ])
+                    .unwrap();
                 }
             };
 
