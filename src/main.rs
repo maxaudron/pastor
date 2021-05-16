@@ -8,7 +8,6 @@ use rocket::fairing::AdHoc;
 use rocket::http::hyper::header::{ContentDisposition, DispositionType};
 use rocket::http::{ContentType, Status};
 use rocket::{Data, Response, State};
-use rocket_contrib::templates::Template;
 
 extern crate tree_magic;
 
@@ -21,28 +20,27 @@ mod file;
 mod id;
 mod util;
 
+use rocket::response::Body;
 use rocket_contrib::serve::StaticFiles;
-use std::collections::HashMap;
-use std::io::Read;
-use syntect::easy::HighlightLines;
+use std::io::{Cursor, Read};
 use syntect::highlighting::ThemeSet;
-use syntect::html::{
-    highlighted_html_for_string, styled_line_to_highlighted_html, IncludeBackground,
-};
 use syntect::parsing::SyntaxSet;
+use tera::Tera;
 use util::HostHeader;
 
 #[get("/")]
-fn index(host: HostHeader) -> Template {
-    let mut context: HashMap<&str, &str> = HashMap::new();
-    context.insert("url", &host.0);
-    Template::render("index", &context)
-}
+fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
+    let mut context = tera::Context::new();
+    context.insert("url", host.0);
+    let s = config.tera.render("index", &context).unwrap();
 
-#[derive(Responder)]
-enum GetReturnType<'a> {
-    Response(Response<'a>),
-    Template(Template),
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+    res.set_header(ContentType::HTML);
+    let size = s.len() as u64;
+    let body = Body::Sized(Cursor::new(s), size);
+    res.set_raw_body(body);
+    Ok(res)
 }
 
 #[get("/<id>?<lang>")]
@@ -50,7 +48,7 @@ fn retrieve(
     id: String,
     lang: Option<String>,
     config: State<ConfigState>,
-) -> Result<GetReturnType, Status> {
+) -> Result<Response, Status> {
     let paste = file::get_db(&id, &config.db)?;
     let now = Utc::now().timestamp();
 
@@ -60,6 +58,13 @@ fn retrieve(
     }
 
     let (mut file, mime) = file::get(file::build_path(&id, &config))?;
+
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+    res.set_header(ContentDisposition {
+        disposition: DispositionType::Inline,
+        parameters: vec![],
+    });
 
     match lang {
         Some(l) if !l.is_empty() => {
@@ -77,36 +82,33 @@ fn retrieve(
                 ss.find_syntax_by_first_line(&buffer)
                     .unwrap_or_else(|| ss.find_syntax_plain_text())
             });
-            let html = highlighted_html_for_string(
+            let html = syntect::html::highlighted_html_for_string(
                 &buffer,
                 &ss,
                 syntax,
                 &ts.themes["base16-eighties.dark"],
             );
 
-            let mut context: HashMap<&str, String> = HashMap::new();
-            context.insert("id", id.to_string());
-            context.insert("lang", l);
-            context.insert("content", html);
+            let mut context = tera::Context::new();
+            context.insert("id", &id);
+            context.insert("lang", &l);
+            context.insert("content", &html);
+            let s = config.tera.render("retrieve", &context).unwrap();
 
-            let t = Template::render("retrieve", &context);
-            Ok(GetReturnType::Template(t))
+            res.set_header(ContentType::HTML);
+            let size = s.len() as u64;
+            let body = Body::Sized(Cursor::new(s), size);
+            res.set_raw_body(body);
+            Ok(res)
         }
         None | _ => {
-            let mut res = Response::new();
-            res.set_status(Status::Ok);
-            res.set_header(ContentDisposition {
-                disposition: DispositionType::Inline,
-                parameters: vec![],
-            });
-
             match mime {
                 Some(m) => res.set_header(ContentType::parse_flexible(&m).unwrap()),
                 None => false,
             };
 
             res.set_streamed_body(file);
-            Ok(GetReturnType::Response(res))
+            Ok(res)
         }
     }
 }
@@ -153,6 +155,7 @@ pub fn create(
 pub struct ConfigState {
     storage_dir: String,
     db: sled::Db,
+    tera: Tera,
 }
 
 #[macro_use]
@@ -166,6 +169,10 @@ pub struct Paste {
     token: String,
 }
 
+const BASE_TEMPLATE: &str = include_str!("../templates/base.html.tera");
+const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
+const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
+
 fn main() {
     rocket::ignite()
         .mount("/", routes![index, retrieve, create, delete])
@@ -173,7 +180,6 @@ fn main() {
             "/",
             StaticFiles::from(concat!(env!("CARGO_MANIFEST_DIR"), "/static")),
         )
-        .attach(Template::fairing())
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
@@ -181,15 +187,44 @@ fn main() {
             let storage_dir = rocket
                 .config()
                 .get_string("storage_dir")
-                .unwrap_or("/storage".to_string());
+                .unwrap_or("storage".to_string());
             let database_dir = rocket
                 .config()
                 .get_string("database_dir")
-                .unwrap_or("/storage/db".to_string());
+                .unwrap_or("storage/db".to_string());
 
             let db = sled::open(database_dir).unwrap();
 
-            Ok(rocket.manage(ConfigState { storage_dir, db }))
+            let template_dir = rocket
+                .config()
+                .get_string("template_dir")
+                .unwrap_or("/templates/*".to_string());
+
+            let mut tera = Tera::parse(&template_dir).unwrap();
+
+            match std::env::var("ROCKET_INDEX_TEMPLATE") {
+                Ok(template) => {
+                    println!("Using external template");
+                    // TODO: Letting user specify both the template dir and specific
+                    //  template files seems unnecessary?
+                    tera.add_template_file(template, Some("index")).unwrap();
+                }
+                Err(_) => {
+                    println!("Using embedded template");
+                    tera.add_raw_template("base", BASE_TEMPLATE).unwrap();
+                    tera.add_raw_template("index", INDEX_TEMPLATE).unwrap();
+                    tera.add_raw_template("retrieve", RETRIEVE_TEMPLATE)
+                        .unwrap();
+                }
+            };
+
+            tera.build_inheritance_chains().unwrap();
+
+            Ok(rocket.manage(ConfigState {
+                storage_dir,
+                db,
+                tera,
+            }))
         }))
         .launch();
 }
