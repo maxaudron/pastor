@@ -216,12 +216,12 @@ fn main() {
                 Ok(s) => {
                     let mut tera = Tera::parse(&format!("{}/*", s)).unwrap();
                     println!("Using external templates at {}", s);
-                    tera.add_template_file(format!("{}/base.html.tera", s), Some("base"))
-                        .unwrap();
-                    tera.add_template_file(format!("{}/index.html.tera", s), Some("index"))
-                        .unwrap();
-                    tera.add_template_file(format!("{}/retrieve.html.tera", s), Some("retrieve"))
-                        .unwrap();
+                    tera.add_template_files(vec![
+                        (format!("{}/base.html.tera", s), Some("base")),
+                        (format!("{}/index.html.tera", s), Some("index")),
+                        (format!("{}/retrieve.html.tera", s), Some("retrieve")),
+                    ])
+                    .unwrap();
                     tera
                 }
                 _ => {
