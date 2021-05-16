@@ -212,28 +212,28 @@ fn main() {
 
             let db = sled::open(database_dir).unwrap();
 
-            let template_dir = rocket
-                .config()
-                .get_string("template_dir")
-                .unwrap_or("/templates/*".to_string());
-
-            let mut tera = Tera::parse(&template_dir).unwrap();
-
-            match std::env::var("ROCKET_INDEX_TEMPLATE") {
-                Ok(template) => {
-                    println!("Using external template");
-                    // TODO: Letting user specify both the template dir and specific
-                    //  template files seems unnecessary?
-                    tera.add_template_file(template, Some("index")).unwrap();
+            let mut tera = match rocket.config().get_string("template_dir") {
+                Ok(s) => {
+                    let mut tera = Tera::parse(&format!("{}/*", s)).unwrap();
+                    println!("Using external templates at {}", s);
+                    tera.add_template_file(format!("{}/base.html.tera", s), Some("base"))
+                        .unwrap();
+                    tera.add_template_file(format!("{}/index.html.tera", s), Some("index"))
+                        .unwrap();
+                    tera.add_template_file(format!("{}/retrieve.html.tera", s), Some("retrieve"))
+                        .unwrap();
+                    tera
                 }
-                Err(_) => {
-                    println!("Using embedded template");
+                _ => {
+                    let mut tera = Tera::parse("/templates/*").unwrap();
+                    println!("Using embedded templates");
                     tera.add_raw_templates(vec![
                         ("base", BASE_TEMPLATE),
                         ("index", INDEX_TEMPLATE),
                         ("retrieve", RETRIEVE_TEMPLATE),
                     ])
                     .unwrap();
+                    tera
                 }
             };
 
