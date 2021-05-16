@@ -89,20 +89,21 @@ fn retrieve(
             file.read_to_string(&mut buffer)
                 .map_err(|_| Status::InternalServerError)?;
 
-            // Load these once at the start of your program TODO move
-            let ss = SyntaxSet::load_defaults_newlines();
-            let ts = ThemeSet::load_defaults();
-
             let language = l[..1].to_uppercase() + &l.to_lowercase()[1..];
-            let syntax = ss.find_syntax_by_name(&language).unwrap_or_else(|| {
-                ss.find_syntax_by_first_line(&buffer)
-                    .unwrap_or_else(|| ss.find_syntax_plain_text())
-            });
+            let syntax = config
+                .syntax_set
+                .find_syntax_by_name(&language)
+                .unwrap_or_else(|| {
+                    config
+                        .syntax_set
+                        .find_syntax_by_first_line(&buffer)
+                        .unwrap_or_else(|| config.syntax_set.find_syntax_plain_text())
+                });
             let html = syntect::html::highlighted_html_for_string(
                 &buffer,
-                &ss,
+                &config.syntax_set,
                 syntax,
-                &ts.themes["base16-eighties.dark"],
+                &config.theme_set.themes["base16-eighties.dark"],
             );
 
             let mut context = tera::Context::new();
@@ -172,6 +173,8 @@ pub struct ConfigState {
     storage_dir: String,
     db: sled::Db,
     tera: Tera,
+    syntax_set: SyntaxSet,
+    theme_set: ThemeSet,
 }
 
 #[macro_use]
@@ -238,6 +241,8 @@ fn main() {
                 storage_dir,
                 db,
                 tera,
+                syntax_set: SyntaxSet::load_defaults_newlines(),
+                theme_set: ThemeSet::load_defaults(),
             }))
         }))
         .launch();
