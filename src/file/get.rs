@@ -1,3 +1,4 @@
+use crate::file;
 use rocket::http::Status;
 use std::fs::File;
 
@@ -22,14 +23,15 @@ pub fn get(filename: std::path::PathBuf) -> Result<(File, Option<&'static str>),
 }
 
 pub fn get_db(id: &String, db: &sled::Db) -> Result<crate::Paste, Status> {
+    let id = file::get_without_extension(id);
     match db.get(id) {
         Ok(item) => match item {
             Some(item) => {
                 let paste: crate::Paste = bincode::deserialize(&item).unwrap();
-                return Ok(paste);
+                Ok(paste)
             }
-            None => return Err(Status::NotFound),
+            None => Err(Status::NotFound),
         },
-        Err(_) => return Err(Status::InternalServerError),
+        Err(_) => Err(Status::InternalServerError),
     }
 }

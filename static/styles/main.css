@@ -1,7 +1,7 @@
 body {
     background-color: #2d2d2d;
     color: #d3d0c8;
-    font-family: "Roboto", "Fira Sans", sans-serif;
+    font-family: "IBM Plex", "Roboto", "Fira Sans", sans-serif;
 }
 
 a {
@@ -9,5 +9,5 @@ a {
 }
 
 pre {
-    font-family: "JetBrains Mono", "Fira Code", monospace;
+    font-family: "IBM Plex Mono", "JetBrains Mono", "Fira Code", monospace;
 }
