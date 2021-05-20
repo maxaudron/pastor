@@ -19,7 +19,6 @@ mod file;
 mod id;
 mod util;
 
-use crate::util::find_syntax_by_name;
 use rocket::response::Body;
 use std::io::{Cursor, Read};
 use std::path::PathBuf;
@@ -27,6 +26,8 @@ use syntect::highlighting::ThemeSet;
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use tera::Tera;
 use util::HostHeader;
+use crate::file::get_ext_from_id;
+use crate::util::find_syntax_by_name;
 
 #[get("/")]
 fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
@@ -167,14 +168,15 @@ pub fn create(
         return Err(Status::MethodNotAllowed);
     }
 
-    let ids = file::store(cont_type, data, config)?;
+    let ids = file::store(cont_type, data, &config)?;
 
     let mut urls = Vec::new();
     for (id, token) in ids {
         urls.push(format!(
-            "https://{host}/{id} {token}\n",
+            "https://{host}/{id}{ext} {token}\n",
             host = host.0,
             id = id,
+            ext = get_ext_from_id(&id, &config).unwrap_or_default(),
             token = token
         ))
     }

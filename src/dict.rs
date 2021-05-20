@@ -1,3 +1,12 @@
+use phf::{phf_map};
+
+pub static DICT_MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
+    "text/plain" => "txt", // This one might be unnecessary
+    "image/png" => "png",
+    "image/jpeg" => "jpg",
+    "application/x-shellscript" => "sh",
+};
+
 pub static DICT_ADJ: [&str; 5187] = [
     "abased",
     "abject",

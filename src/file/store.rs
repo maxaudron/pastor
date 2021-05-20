@@ -16,7 +16,7 @@ use crate::Paste;
 pub fn store_multipart(
     boundary: &str,
     paste: Data,
-    config: State<crate::ConfigState>,
+    config: &State<crate::ConfigState>,
 ) -> Result<Vec<(String, String)>, Status> {
     let mut ids = Vec::new();
 
@@ -97,7 +97,7 @@ pub fn update(
 pub fn store(
     cont_type: &ContentType,
     paste: Data,
-    config: State<crate::ConfigState>,
+    config: &State<crate::ConfigState>,
 ) -> Result<Vec<(String, String)>, Status> {
     let (_, boundary) = cont_type
         .params()
