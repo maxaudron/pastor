@@ -1,6 +1,7 @@
 use rocket::request::FromRequest;
 use rocket::Outcome;
 use rocket::Request;
+use syntect::parsing::{SyntaxSet, SyntaxReference};
 
 pub struct HostHeader<'a>(pub &'a str);
 impl<'a, 'r> FromRequest<'a, 'r> for HostHeader<'a> {
@@ -28,4 +29,14 @@ pub fn expires(size: u64) -> i64 {
     };
 
     (expiry * 86400.0) as i64
+}
+
+pub fn find_syntax_by_name<F>(ss: &SyntaxSet, predicate: F) -> Option<&SyntaxReference>
+    where
+        F: Fn(&&SyntaxReference) -> bool
+{
+    ss
+        .syntaxes()
+        .iter()
+        .find(predicate)
 }
