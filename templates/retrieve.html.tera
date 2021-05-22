@@ -1,0 +1,14 @@
+{% extends "base" %}
+
+{% block title %}
+pastor - {{ id }}
+{% endblock title %}
+
+{% block content %}
+    <div>
+        <a href="/{{ id }}">Raw</a>
+        <div>
+            {{ content|safe }}
+        </div>
+    </div>
+{% endblock content %}
