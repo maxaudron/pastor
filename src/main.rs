@@ -19,14 +19,14 @@ mod file;
 mod id;
 mod util;
 
+use crate::util::find_syntax_by_name;
 use rocket::response::Body;
 use std::io::{Cursor, Read};
 use std::path::PathBuf;
 use syntect::highlighting::ThemeSet;
-use syntect::parsing::{SyntaxSet, SyntaxReference};
+use syntect::parsing::{SyntaxReference, SyntaxSet};
 use tera::Tera;
 use util::HostHeader;
-use crate::util::find_syntax_by_name;
 
 #[get("/")]
 fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
@@ -91,13 +91,23 @@ fn retrieve(
                 .map_err(|_| Status::InternalServerError)?;
 
             // 1. Try to find syntax by exact match
-            let syntax = find_syntax_by_name(&config.syntax_set, |it: &&SyntaxReference| it.name.to_lowercase() == l.to_lowercase())
-                // 2. Try to find syntax by "contains" match
-                .unwrap_or(find_syntax_by_name(&config.syntax_set, |it: &&SyntaxReference| it.name.to_lowercase().contains(&l.to_lowercase()))
-                    // 3. Try to auto-detect syntax
-                    .unwrap_or(config.syntax_set.find_syntax_by_first_line(&buffer)
+            let syntax = find_syntax_by_name(&config.syntax_set, |it: &&SyntaxReference| {
+                it.name.to_lowercase() == l.to_lowercase()
+            })
+            // 2. Try to find syntax by "contains" match
+            .unwrap_or(
+                find_syntax_by_name(&config.syntax_set, |it: &&SyntaxReference| {
+                    it.name.to_lowercase().contains(&l.to_lowercase())
+                })
+                // 3. Try to auto-detect syntax
+                .unwrap_or(
+                    config
+                        .syntax_set
+                        .find_syntax_by_first_line(&buffer)
                         // 4. Use plaintext syntax
-                        .unwrap_or(config.syntax_set.find_syntax_plain_text())));
+                        .unwrap_or(config.syntax_set.find_syntax_plain_text()),
+                ),
+            );
 
             println!("Using syntax: {}", syntax.name);
 
