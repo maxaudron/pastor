@@ -206,11 +206,11 @@ fn main() {
             let storage_dir = rocket
                 .config()
                 .get_string("storage_dir")
-                .unwrap_or("storage".to_string());
+                .unwrap_or("/storage".to_string());
             let database_dir = rocket
                 .config()
                 .get_string("database_dir")
-                .unwrap_or("storage/db".to_string());
+                .unwrap_or("/storage/db".to_string());
 
             let db = sled::open(database_dir).unwrap();
 
