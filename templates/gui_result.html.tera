@@ -1,0 +1,12 @@
+{% extends "base" %}
+
+{% block title %}
+pastor - gui result
+{% endblock title %}
+
+{% block content %}
+
+View file: <pre><a href="/{{ id }}">{{ id }}</a></pre> </br>
+Delete token: <pre>{{ token }}</pre>
+
+{% endblock content %}

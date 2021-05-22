@@ -10,7 +10,7 @@ pastor - gui
     <h1><a href="/">pastor</a> - gui</h1>
 
     <textarea name="paste_content" form="paste_form" placeholder="Paste text here…"></textarea>
-    <form action="/" id="paste_form" method="POST" enctype="multipart/form-data"></form>
+    <form action="/?from_gui=true" id="paste_form" method="POST" enctype="multipart/form-data"></form>
     <div class="buttons">
         <input type="submit" value="Submit" form="paste_form">
         <button disabled title="coming soon™">Upload file</button>

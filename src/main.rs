@@ -171,14 +171,21 @@ fn delete(id: String, token: String, config: State<ConfigState>) -> Result<Statu
     return Ok(Status::Ok);
 }
 
-#[post("/?<token>", data = "<data>")]
-pub fn create(
+#[derive(Responder)]
+pub enum CreateReturnType<'a> {
+    Raw(String),
+    Response(Response<'a>),
+}
+
+#[post("/?<token>&<from_gui>", data = "<data>")]
+pub fn create<'a>(
     cont_type: &ContentType,
     data: Data,
     token: Option<String>,
+    from_gui: bool,
     config: State<crate::ConfigState>,
     host: HostHeader,
-) -> Result<String, Status> {
+) -> Result<CreateReturnType<'a>, Status> {
     if !cont_type.is_form_data() {
         return Err(Status::MethodNotAllowed);
     }
@@ -195,7 +202,29 @@ pub fn create(
             token = paste.token
         ))
     }
-    Ok(urls.join("\n"))
+
+    if from_gui {
+        let mut context = tera::Context::new();
+        // The gui is only able to create one upload at a time
+        if urls.len() > 1 {
+            println!("Warning: GUI somehow created more than one upload.");
+        }
+        context.insert("id", &ids[0].0);
+        context.insert("token", &ids[0].1);
+        let rendered_template = config.tera.render("gui_result", &context)
+            .unwrap();
+
+        // TODO: These duplicated HTML response creations could be refactored into a method
+        let mut res = Response::new();
+        res.set_status(Status::Ok);
+        res.set_header(ContentType::HTML);
+        let size = rendered_template.len() as u64;
+        let body = Body::Sized(Cursor::new(rendered_template), size);
+        res.set_raw_body(body);
+        Ok(CreateReturnType::Response(res))
+    } else {
+        Ok(CreateReturnType::Raw(urls.join("\n")))
+    }
 }
 
 pub struct ConfigState {
@@ -256,6 +285,7 @@ const BASE_TEMPLATE: &str = include_str!("../templates/base.html.tera");
 const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
 const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
 const GUI_TEMPLATE: &str = include_str!("../templates/gui.html.tera");
+const GUI_RESULT_TEMPLATE: &str = include_str!("../templates/gui_result.html.tera");
 
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 
@@ -294,6 +324,7 @@ fn main() {
                         (format!("{}/index.html.tera", s), Some("index")),
                         (format!("{}/retrieve.html.tera", s), Some("retrieve")),
                         (format!("{}/gui.html.tera", s), Some("gui")),
+                        (format!("{}/gui_result.html.tera", s), Some("gui")),
                     ])
                     .unwrap();
                     tera
@@ -306,6 +337,7 @@ fn main() {
                         ("index", INDEX_TEMPLATE),
                         ("retrieve", RETRIEVE_TEMPLATE),
                         ("gui", GUI_TEMPLATE),
+                        ("gui_result", GUI_RESULT_TEMPLATE),
                     ])
                     .unwrap();
                     tera
