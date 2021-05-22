@@ -31,6 +31,20 @@ use syntect::parsing::{SyntaxReference, SyntaxSet};
 use tera::Tera;
 use util::HostHeader;
 
+#[get("/gui")]
+fn gui(config: State<ConfigState>) -> Result<Response<'static>, Status> {
+    let context = tera::Context::new();
+    let rendered_template = config.tera.render("gui", &context).unwrap();
+
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+    res.set_header(ContentType::HTML);
+    let size = rendered_template.len() as u64;
+    let body = Body::Sized(Cursor::new(rendered_template), size);
+    res.set_raw_body(body);
+    Ok(res)
+}
+
 #[get("/")]
 fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
     let mut context = tera::Context::new();
@@ -241,6 +255,7 @@ impl Paste {
 const BASE_TEMPLATE: &str = include_str!("../templates/base.html.tera");
 const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
 const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
+const GUI_TEMPLATE: &str = include_str!("../templates/gui.html.tera");
 
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 
@@ -254,7 +269,7 @@ fn main() {
 
 
     rocket::ignite()
-        .mount("/", routes![index, retrieve, create, delete, static_file])
+        .mount("/", routes![index, gui, retrieve, create, delete, static_file])
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
@@ -278,6 +293,7 @@ fn main() {
                         (format!("{}/base.html.tera", s), Some("base")),
                         (format!("{}/index.html.tera", s), Some("index")),
                         (format!("{}/retrieve.html.tera", s), Some("retrieve")),
+                        (format!("{}/gui.html.tera", s), Some("gui")),
                     ])
                     .unwrap();
                     tera
@@ -289,6 +305,7 @@ fn main() {
                         ("base", BASE_TEMPLATE),
                         ("index", INDEX_TEMPLATE),
                         ("retrieve", RETRIEVE_TEMPLATE),
+                        ("gui", GUI_TEMPLATE),
                     ])
                     .unwrap();
                     tera
