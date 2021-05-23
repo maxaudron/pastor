@@ -193,12 +193,12 @@ pub fn create<'a>(
     let pastes = file::store(cont_type, data, &config)?;
 
     let mut urls = Vec::new();
-    for paste in pastes {
+    for paste in &pastes {
         urls.push(format!(
             "https://{host}/{id}{ext} {token}\n",
             host = host.0,
             id = paste.id,
-            ext = paste.ext.unwrap_or_default(),
+            ext = paste.ext.as_ref().unwrap_or(&"".to_string()),
             token = paste.token
         ))
     }
@@ -209,8 +209,8 @@ pub fn create<'a>(
         if urls.len() > 1 {
             println!("Warning: GUI somehow created more than one upload.");
         }
-        context.insert("id", &ids[0].0);
-        context.insert("token", &ids[0].1);
+        context.insert("id", &pastes[0].id);
+        context.insert("token", &pastes[0].token);
         let rendered_template = config.tera.render("gui_result", &context)
             .unwrap();
 
