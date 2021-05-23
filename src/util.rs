@@ -1,6 +1,9 @@
-use rocket::request::FromRequest;
+use std::io::Cursor;
+
+use rocket::{http::{ContentType, Status}, request::FromRequest, response::Body};
 use rocket::Outcome;
 use rocket::Request;
+use rocket::Response;
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 use crate::dict::DICT_MIME_EXT;
@@ -57,4 +60,14 @@ pub fn ext_from_mime(mime: &str) -> Option<String> {
             }
         },
     }
+}
+
+pub fn create_response_from_string(content: String, content_type: Option<ContentType>) -> Response<'static> {
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+    res.set_header(content_type.unwrap_or(ContentType::HTML));
+    let size = content.len() as u64;
+    let body = Body::Sized(Cursor::new(content), size);
+    res.set_raw_body(body);
+    res
 }

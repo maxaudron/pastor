@@ -35,14 +35,7 @@ use util::HostHeader;
 fn gui(config: State<ConfigState>) -> Result<Response<'static>, Status> {
     let context = tera::Context::new();
     let rendered_template = config.tera.render("gui", &context).unwrap();
-
-    let mut res = Response::new();
-    res.set_status(Status::Ok);
-    res.set_header(ContentType::HTML);
-    let size = rendered_template.len() as u64;
-    let body = Body::Sized(Cursor::new(rendered_template), size);
-    res.set_raw_body(body);
-    Ok(res)
+    Ok(util::create_response_from_string(rendered_template, None))
 }
 
 #[get("/")]
@@ -50,28 +43,17 @@ fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a
     let mut context = tera::Context::new();
     context.insert("url", host.0);
     let rendered_template = config.tera.render("index", &context).unwrap();
-
-    let mut res = Response::new();
-    res.set_status(Status::Ok);
-    res.set_header(ContentType::HTML);
-    let size = rendered_template.len() as u64;
-    let body = Body::Sized(Cursor::new(rendered_template), size);
-    res.set_raw_body(body);
-    Ok(res)
+    Ok(util::create_response_from_string(rendered_template, None))
 }
 
 #[get("/static/<path..>")]
 fn static_file<'a>(path: PathBuf) -> Option<Response<'a>> {
-    let mut res = Response::new();
-    res.set_status(Status::Ok);
-
     match path.to_str() {
         Some("styles/main.css") => {
-            res.set_header(ContentType::CSS);
-            let size = MAIN_CSS.len() as u64;
-            let body = Body::Sized(Cursor::new(MAIN_CSS), size);
-            res.set_raw_body(body);
-            Some(res)
+            Some(
+                util::create_response_from_string(MAIN_CSS.into(),
+                ContentType::CSS.into()),
+            )
         }
         _ => None,
     }
@@ -214,13 +196,7 @@ pub fn create<'a>(
         let rendered_template = config.tera.render("gui_result", &context)
             .unwrap();
 
-        // TODO: These duplicated HTML response creations could be refactored into a method
-        let mut res = Response::new();
-        res.set_status(Status::Ok);
-        res.set_header(ContentType::HTML);
-        let size = rendered_template.len() as u64;
-        let body = Body::Sized(Cursor::new(rendered_template), size);
-        res.set_raw_body(body);
+        let res = util::create_response_from_string(rendered_template, None);
         Ok(CreateReturnType::Response(res))
     } else {
         Ok(CreateReturnType::Raw(urls.join("\n")))
