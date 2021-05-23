@@ -4,10 +4,11 @@
     --fg: #d3d0c8;
     --link: #5d89b5;
 }
+
 body {
     background-color: var(--bg);
     color: var(--fg);
-    font-family: "IBM Plex", "Roboto", "Fira Sans", sans-serif;
+    font-family: "IBM Plex Sans", "Roboto", "Fira Sans", sans-serif;
 }
 
 a {
