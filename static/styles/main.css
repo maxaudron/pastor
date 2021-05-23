@@ -34,6 +34,7 @@ pre {
     color: var(--fg);
     border-color: var(--mid);
 }
+
 .gui > .buttons {
     margin-top: 1em;
 }
@@ -42,3 +43,9 @@ pre {
     margin-left: 0.5em;
     margin-right: 0.5em;
 }
+
+.gui > .buttons > #submit_upload,
+.gui > .buttons > #hidden_input {
+    display: none;
+}
+
