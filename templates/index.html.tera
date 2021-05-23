@@ -1,13 +1,8 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title></title>
-</head>
-<body>
-  {% extends "base" %} {% block title %} pastor {% endblock title
-  %} {% block content %}
-  <div>
-    <pre>
+{% extends "base" %}
+{% block title %} pastor {% endblock title %}
+{% block content %}
+<div>
+  <pre>
 
 
                              _ __   __ _ ___| |_ ___  _ __
@@ -86,7 +81,6 @@ Expiry
     0 +------------|-------------|------------|-------------|------------|-+
       0           100           200          300           400          500 MiB
 
-        </pre>
-  </div>{% endblock content %}
-</body>
-</html>
+  </pre>
+</div>
+{% endblock content %}
