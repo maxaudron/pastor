@@ -14,6 +14,86 @@ compiled binary or as a docker container containing the same.
 docker run -p 80:8000 -v <storage path>:/storage cocainefarm/pastor:latest
 #+END_SRC
 
+#+begin_src
+
+                             _ __   __ _ ___| |_ ___  _ __
+                            | '_ \ / _` / __| __/ _ \| '__|
+                            | |_) | (_| \__ \ || (_) | |
+                            | .__/ \__,_|___/\__\___/|_|
+                            |_|
+
+                       The pastebin that hopefully doesn't suck
+
+
+Usage
+=====
+
+Files
+-----
+ Upload
+
+  Upload files:
+  -----------------------------------------------------------------------------------
+  $ curl -F a=@vim.png b=@vim2.png https://{{ url }}/
+  https://{{ url }}/picturedsalters aloofgremlins
+  -----------------------------------------------------------------------------------
+  The second string is a token needed to authenticate for
+  modifying or deleteing your uploads.
+
+ Retrieve
+
+  Retrieve file:
+  -----------------------------------------------------------------------------------
+  GET https://{{ url }}/picturedsalters
+  -----------------------------------------------------------------------------------
+
+  View file with syntax highlighting:
+  -----------------------------------------------------------------------------------
+  GET https://{{ url }}/picturedsalters?lang=rust
+  GET https://{{ url }}/picturedsalters?lang=auto (attempts detection)
+  -----------------------------------------------------------------------------------
+
+ Delete
+
+  Delete file:
+  -----------------------------------------------------------------------------------
+  $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
+  -----------------------------------------------------------------------------------
+
+Expiry
+======
+
+ Files expire after an mount of time calculated based on the following formula:
+
+    min_age + (-max_age + min_age) * (size / max_size - 1)^3
+
+ Where min_age is 5 days, max_age is 365 days, and the maximum size is 512MiB.
+
+  days
+  350 |.
+      | ..
+      |  ..
+  300 |-   ..
+      |     ..
+  250 |-      .
+      |        ..
+      |         ..
+  200 |-          ..
+      |             ..
+      |               ..
+  150 |-                ...
+      |                   ...
+      |                     ...
+  100 |-                       ...
+      |                           ....
+   50 |-                            ......
+      |                                   ......
+      |                                         ............................
+    0 +------------|-------------|------------|-------------|------------|-+
+      0           100           200          300           400          500 MiB
+
+#+end_src
+
 * Features
 + Easy deployment, no outside dependencies.
 + Solid parsing and return of mimetypes.
@@ -22,7 +102,6 @@ docker run -p 80:8000 -v <storage path>:/storage cocainefarm/pastor:latest
 ** TODO
 + Updating of pastes
 + Link shortening
-+ sunsetting and automated deletion
 
 * Configuration
 rocket.rs is used as a web framework and thus it's configuration structure is

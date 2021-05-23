@@ -1,12 +1,13 @@
-{% extends "base" %}
-
-{% block title %}
-pastor
-{% endblock title %}
-
-{% block content %}
-    <div>
-        <pre>
+<!DOCTYPE html>
+<html>
+<head>
+  <title></title>
+</head>
+<body>
+  {% extends "base" %} {% block title %} pastor {% endblock title
+  %} {% block content %}
+  <div>
+    <pre>
 
 
                              _ __   __ _ ___| |_ ___  _ __
@@ -53,7 +54,39 @@ Files
   $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
   -----------------------------------------------------------------------------------
 
+Expiry
+======
+
+ Files expire after an mount of time calculated based on the following formula:
+
+    min_age + (-max_age + min_age) * (size / max_size - 1)^3
+
+ Where min_age is 5 days, max_age is 365 days, and the maximum size is 512MiB.
+
+  days
+  350 |.
+      | ..
+      |  ..
+  300 |-   ..
+      |     ..
+  250 |-      .
+      |        ..
+      |         ..
+  200 |-          ..
+      |             ..
+      |               ..
+  150 |-                ...
+      |                   ...
+      |                     ...
+  100 |-                       ...
+      |                           ....
+   50 |-                            ......
+      |                                   ......
+      |                                         ............................
+    0 +------------|-------------|------------|-------------|------------|-+
+      0           100           200          300           400          500 MiB
 
         </pre>
-    </div>
-{% endblock content %}
+  </div>{% endblock content %}
+</body>
+</html>
