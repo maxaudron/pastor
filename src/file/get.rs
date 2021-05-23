@@ -2,7 +2,7 @@ use crate::file;
 use rocket::http::Status;
 use std::fs::File;
 
-pub fn get(filename: std::path::PathBuf) -> Result<(File, Option<&'static str>), Status> {
+pub fn get<'a>(filename: std::path::PathBuf) -> Result<File, Status> {
     let file = File::open(&filename);
     match file {
         Err(_) => return Err(Status::NotFound),
@@ -11,15 +11,7 @@ pub fn get(filename: std::path::PathBuf) -> Result<(File, Option<&'static str>),
 
     let file = file.unwrap();
 
-    let mime_source = tree_magic::from_filepath(&filename);
-    let mime;
-
-    match mime_source {
-        x if x.contains("text/") => mime = Some("text/plain; charset=utf-8"),
-        _ => mime = None,
-    };
-
-    Ok((file, mime))
+    Ok(file)
 }
 
 pub fn get_db(id: &String, db: &sled::Db) -> Result<crate::Paste, Status> {

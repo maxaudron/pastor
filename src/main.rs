@@ -1,6 +1,9 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 extern crate multipart;
 
+use tracing::{Level, error, trace};
+use tracing_subscriber::FmtSubscriber;
+
 #[macro_use]
 extern crate rocket;
 use rocket::fairing::AdHoc;
@@ -19,6 +22,7 @@ mod file;
 mod id;
 mod util;
 
+use crate::util::find_syntax_by_name;
 use rocket::response::Body;
 use std::io::{Cursor, Read};
 use std::path::PathBuf;
@@ -26,8 +30,6 @@ use syntect::highlighting::ThemeSet;
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 use tera::Tera;
 use util::HostHeader;
-use crate::file::get_ext_from_id;
-use crate::util::find_syntax_by_name;
 
 #[get("/")]
 fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
@@ -75,7 +77,7 @@ fn retrieve(
         return Err(Status::Gone);
     }
 
-    let (mut file, mime) = file::get(file::build_path(&id, &config))?;
+    let mut file = file::get(file::build_path(&id, &config))?;
 
     let mut res = Response::new();
     res.set_status(Status::Ok);
@@ -132,10 +134,9 @@ fn retrieve(
             Ok(res)
         }
         None | _ => {
-            match mime {
-                Some(m) => res.set_header(ContentType::parse_flexible(&m).unwrap()),
-                None => false,
-            };
+            if paste.mime.contains("text/") {
+                res.set_header(ContentType::parse_flexible("text/plain").unwrap());
+            }
 
             res.set_streamed_body(file);
             Ok(res)
@@ -168,16 +169,16 @@ pub fn create(
         return Err(Status::MethodNotAllowed);
     }
 
-    let ids = file::store(cont_type, data, &config)?;
+    let pastes = file::store(cont_type, data, &config)?;
 
     let mut urls = Vec::new();
-    for (id, token) in ids {
+    for paste in pastes {
         urls.push(format!(
             "https://{host}/{id}{ext} {token}\n",
             host = host.0,
-            id = id,
-            ext = get_ext_from_id(&id, &config).unwrap_or_default(),
-            token = token
+            id = paste.id,
+            ext = paste.ext.unwrap_or_default(),
+            token = paste.token
         ))
     }
     Ok(urls.join("\n"))
@@ -197,9 +198,44 @@ extern crate bincode;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct Paste {
+    id: String,
     created: i64,
     expires: i64,
     token: String,
+    mime: String,
+    ext: Option<String>,
+}
+
+impl Paste {
+    #[tracing::instrument]
+    pub fn from_file(id: &str, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
+        let size = file.metadata().unwrap().len();
+        let now = Utc::now().timestamp();
+        let expiry = now + crate::util::expires(size);
+
+        let token = id::create_id();
+
+        let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
+        file.take(2048).read_to_end(&mut mime_bytes)
+            .map_err(|e| {
+                error!("failed to read file: {:?}", e);
+                Status::InternalServerError
+            })?;
+
+        trace!("read bytes for mime parsing: {:x?}", mime_bytes);
+
+        let mime = tree_magic::from_u8(&mime_bytes).to_string();
+        let ext = util::ext_from_mime(&mime);
+
+        Ok(Paste {
+            id: id.to_string(),
+            created: now,
+            expires: expiry,
+            token,
+            mime,
+            ext,
+        })
+    }
 }
 
 const BASE_TEMPLATE: &str = include_str!("../templates/base.html.tera");
@@ -209,6 +245,14 @@ const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 
 fn main() {
+    let subscriber = FmtSubscriber::builder()
+        .with_max_level(Level::TRACE)
+        .finish();
+
+    tracing::subscriber::set_global_default(subscriber)
+        .expect("setting default subscriber failed");
+
+
     rocket::ignite()
         .mount("/", routes![index, retrieve, create, delete, static_file])
         .attach(AdHoc::on_attach("Set Config", |rocket| {

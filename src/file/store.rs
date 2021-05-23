@@ -1,14 +1,13 @@
+use std::{io::Seek, path::Path};
 use std::fs::File;
 use std::fs::OpenOptions;
-use std::path::Path;
 
 use rocket::http::{ContentType, Status};
 use rocket::Data;
 use rocket::State;
 
-use chrono::Utc;
-
 use multipart::server::Multipart;
+use tracing::error;
 
 use crate::id;
 use crate::Paste;
@@ -17,8 +16,8 @@ pub fn store_multipart(
     boundary: &str,
     paste: Data,
     config: &State<crate::ConfigState>,
-) -> Result<Vec<(String, String)>, Status> {
-    let mut ids = Vec::new();
+) -> Result<Vec<Paste>, Status> {
+    let mut pastes = Vec::new();
 
     let mut multipart = Multipart::with_body(paste.open(), boundary);
 
@@ -35,16 +34,22 @@ pub fn store_multipart(
                     .memory_threshold(0)
                     .write_to(&mut file);
 
-                let token = id::create_id();
-                store_db(&config.db, &id, token.clone(), file);
+                // Go back to beginning of file for us to be able to read it again
+                file.seek(std::io::SeekFrom::Start(0)).map_err(|e| {
+                    error!("failed to seek file: {:?}", e);
+                    Status::InternalServerError
+                })?;
 
-                ids.push((id, token));
+                let paste = Paste::from_file(&id, &mut file)?;
+                store_db(&config.db, &paste);
+
+                pastes.push(paste);
             }
             None => break,
         }
     }
 
-    Ok(ids)
+    Ok(pastes)
 }
 
 pub fn update_multipart(
@@ -98,7 +103,7 @@ pub fn store(
     cont_type: &ContentType,
     paste: Data,
     config: &State<crate::ConfigState>,
-) -> Result<Vec<(String, String)>, Status> {
+) -> Result<Vec<Paste>, Status> {
     let (_, boundary) = cont_type
         .params()
         .find(|&(k, _)| k == "boundary")
@@ -128,25 +133,22 @@ fn create_file(config: &State<crate::ConfigState>) -> Result<(File, String), Sta
         return Err(Status::Conflict);
     };
 
-    let file = File::create(&filename).unwrap();
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(&filename)
+        .map_err(|e| {
+            error!("failed to create file: {:?}", e);
+            Status::InternalServerError
+        })?;
 
     Ok((file, id))
 }
 
-fn store_db(db: &sled::Db, id: &str, token: String, file: File) {
-    let size = file.metadata().unwrap().len();
-    let now = Utc::now().timestamp();
-    let expiry = now + crate::util::expires(size);
-
-    db.insert(
-        id,
-        bincode::serialize(&Paste {
-            created: now,
-            expires: expiry,
-            token,
-        })
-        .unwrap(),
-    )
-    .unwrap();
+fn store_db(db: &sled::Db, paste: &Paste) {
+    db.insert(&paste.id, bincode::serialize(&paste).unwrap())
+        .unwrap();
     db.flush().unwrap();
 }
