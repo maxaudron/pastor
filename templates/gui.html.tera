@@ -6,14 +6,30 @@ pastor - gui
 
 {% block content %}
 
+<script>
+    function uploadButtonClicked() {
+	const x = document.getElementById('hideupload');
+	x.click();
+    }
+
+    function fileInputChanged() {
+	const x = document.getElementById('submit2');
+	x.click();
+    }
+</script>
+
 <div class="gui">
     <h1><a href="/">pastor</a> - gui</h1>
 
     <textarea name="paste_content" form="paste_form" placeholder="Paste text here…"></textarea>
     <form action="/?from_gui=true" id="paste_form" method="POST" enctype="multipart/form-data"></form>
+    <form action="/?from_gui=true" id="paste_form2" method="POST" enctype="multipart/form-data"></form>
     <div class="buttons">
-        <input type="submit" value="Submit" form="paste_form">
-        <button disabled title="coming soon™">Upload file</button>
+        <input id="submit" type="submit" value="Submit" form="paste_form">
+        <input id="submit2" type="submit" value="Submit2" form="paste_form2">
+
+	<button onClick="uploadButtonClicked()" name="paste_content" id="upload_inventory">Upload</button>
+	<input id="hideupload" name="paste_content" type="file" style="display:unset;" form="paste_form2" onChange="fileInputChanged()"/>
     </div>
 </div>
 
