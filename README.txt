@@ -1,20 +1,3 @@
-#+TITLE: pastor - a pastebin that hopefully doesn't suck
-
-* Table of Contents :TOC:
-- [[#description][Description]]
-- [[#features][Features]]
-  - [[#todo][TODO]]
-- [[#configuration][Configuration]]
-
-* Description
-pastor is a simple pastebin written in rust. it can be used as a single statically
-compiled binary or as a docker container containing the same.
-
-#+BEGIN_SRC shell
-docker run -p 80:8000 -v <storage path>:/storage cocainefarm/pastor:latest
-#+END_SRC
-
-#+begin_src
 
                              _ __   __ _ ___| |_ ___  _ __
                             | '_ \ / _` / __| __/ _ \| '__|
@@ -24,6 +7,45 @@ docker run -p 80:8000 -v <storage path>:/storage cocainefarm/pastor:latest
 
                        The pastebin that hopefully doesn't suck
 
+Description
+===========
+
+ pastor was born out of frustration with other pastebins and their shortcomings
+
+   - require an external database, hassel to set up.
+   - have very unreliable mime type parsing leading to
+     files being returned with the wrong mime type
+   - won't show files in the browser but only prompt to download
+
+ pastor tries to do better
+
+   - ensure content-disposition headers are set to inline to display in browser
+   - only interfere with mimetypes where needed
+     - sets all text/* mime types to text/plain to avoid inline
+       rendering of e.g. html and thus injection of external resources.
+   - file extensions are for squishy humans
+     - try to guess an extension based on the mime type
+       but only if absolutely sure it's the correct one
+     - file extensions can be set to whatever the user desires,
+       they are ignored when accessing the paste.
+   - easy to set up, single binary, no external dependencies
+     - release binaries are staticly deployed, container image provided.
+     - uses an embedded database, sled, to store paste metadata.
+     - various templates like this page are compiled in by default
+       but can be customized by providing external files.
+
+Installation
+============
+
+ To run pastor with docker or podman:
+
+   podman run -p 80:8000 -v <storage path>:/storage kube.cat/cocainefarm/pastor:latest
+
+ To run pastor using the binary:
+
+   curl -Lo pastor <url>
+   chmod +x pastor
+   ROCKET_STORAGE_DIR=<storage path> ./pastor
 
 Usage
 =====
@@ -91,25 +113,3 @@ Expiry
       |                                         ............................
     0 +------------|-------------|------------|-------------|------------|-+
       0           100           200          300           400          500 MiB
-
-#+end_src
-
-* Features
-+ Easy deployment, no outside dependencies.
-+ Solid parsing and return of mimetypes.
-+ Optional syntax highlighting
-
-** TODO
-+ Updating of pastes
-+ Link shortening
-
-* Configuration
-rocket.rs is used as a web framework and thus it's configuration structure is
-used. Detail can be found [[https://rocket.rs/v0.4/guide/configuration/#configuration][here]]
-
-By default the container binds to ~0.0.0.0~ and exposes port 8000. This can be
-changed with the env vars ~$ROCKET_ADDRESS~ and ~$ROCKET_PORT~ respectively.
-
-Pastes are stored in ~$ROCKET_STORAGE_DIR~. The index page and the retrieve page
-(if ~?lang~ is used) are using tera templates in ~./templates~ or
-~$ROCKET_TEMPLATE_DIR~.
