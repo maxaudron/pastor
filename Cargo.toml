@@ -1,6 +1,6 @@
 [package]
 name = "pastor"
-version = "0.5.3"
+version = "0.6.0"
 authors = ["Max Audron <audron@cocaine.farm>", "Lorenz Leitner <lrnz.ltnr@gmail.com"]
 edition = "2018"
 
