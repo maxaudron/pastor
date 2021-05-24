@@ -1,20 +1,8 @@
 include:
-  - project: 'cocainefarm/templates/ci'
-    file: '/container.tags.yaml'
+  - project: "cocainefarm/templates/ci"
+    file: "/container.tags.yaml"
+  - project: "cocainefarm/templates/ci"
+    file: "/rust.yaml"
 
-build:
-  image: rust:1.50
-  stage: build
-  script:
-    - apt-get update
-    - apt-get install musl-tools -y
-    - rustup default nightly && rustup update
-    - rustup target add x86_64-unknown-linux-musl --toolchain=nightly
-    - cargo build --release --target=x86_64-unknown-linux-musl
-    - 'curl --header "JOB-TOKEN: $CI_JOB_TOKEN" --upload-file target/x86_64-unknown-linux-musl/release/pastor "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/generic/pastor/$CI_COMMIT_TAG/pastor_amd64_static'
-  artifacts:
-    expose_as: "pastor_amd64_static"
-    paths:
-      - target/x86_64-unknown-linux-musl/release/pastor
-  only:
-    - tags 
+variables:
+  RUST_BASE_IMAGE: docker.io/rustlang/rust:nightly-alpine3.12
