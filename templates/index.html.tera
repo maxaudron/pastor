@@ -49,10 +49,6 @@ Files
   $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
   -----------------------------------------------------------------------------------
 
-GUI
-=====
-A graphical user interface is available at: <a href="https://{{ url }}/gui">https://{{ url }}/gui</a>
-
 Expiry
 ======
 
@@ -84,6 +80,11 @@ Expiry
       |                                         ............................
     0 +------------|-------------|------------|-------------|------------|-+
       0           100           200          300           400          500 MiB
+
+GUI
+=====
+
+A graphical user interface is available at: <a href="/gui">https://{{ url }}/gui</a>
 
   </pre>
 </div>
