@@ -6,30 +6,17 @@ pastor - gui
 
 {% block content %}
 
-<script>
-    function uploadButtonClicked() {
-	const x = document.getElementById('hidden_input');
-	x.click();
-    }
-
-    function fileInputChanged() {
-	const x = document.getElementById('submit_upload');
-	x.click();
-    }
-</script>
-
 <div class="gui">
     <h1><a href="/">pastor</a> - gui</h1>
 
     <textarea name="paste_content" form="paste_form_paste" placeholder="Paste text here…"></textarea>
     <form action="/?from_gui=true" id="paste_form_paste" method="POST" enctype="multipart/form-data"></form>
-    <form action="/?from_gui=true" id="paste_form_upload" method="POST" enctype="multipart/form-data"></form>
+    <form action="/?from_gui=true" id="paste_form_file" method="POST" enctype="multipart/form-data"></form>
     <div class="buttons">
         <input id="submit_paste" type="submit" value="Submit paste" form="paste_form_paste">
-        <input id="submit_upload" type="submit" value="" form="paste_form_upload">
-
-	<button onClick="uploadButtonClicked()" name="paste_content">Upload file</button>
-	<input id="hidden_input" name="paste_content" type="file" form="paste_form_upload" onChange="fileInputChanged()"/>
+	or
+        <input id="submit_file" type="submit" value="Submit file" form="paste_form_file">
+	<input id="input_file" name="paste_content" type="file" form="paste_form_file">
     </div>
 </div>
 

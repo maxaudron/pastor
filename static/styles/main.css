@@ -40,13 +40,11 @@ pre {
     margin-top: 1em;
 }
 
-.gui > .buttons > button {
-    margin-left: 0.5em;
+.gui > .buttons > #submit_paste {
     margin-right: 0.5em;
 }
 
-.gui > .buttons > #submit_upload,
-.gui > .buttons > #hidden_input {
-    display: none;
+.gui > .buttons > #submit_file {
+    margin-left: 0.5em;
 }
 
