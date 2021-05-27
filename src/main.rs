@@ -142,15 +142,15 @@ fn retrieve<'a>(
 }
 
 #[delete("/<id>?<token>")]
-fn delete(id: String, token: String, config: State<ConfigState>) -> Result<Status, Status> {
-    let paste = file::get_db(&id, &config.db)?;
+fn delete(id: PasteId, token: String, config: State<ConfigState>) -> Result<Status, Status> {
+    let paste = file::get_db(id.0.as_ref(), &config.db)?;
 
     if paste.token != token {
         return Err(Status::Forbidden);
     }
 
-    file::delete(file::build_path(&id, &config))?;
-    config.db.remove(&id).unwrap();
+    file::delete(file::build_path(id.0.as_ref(), &config))?;
+    config.db.remove(id.0.as_ref()).unwrap();
     return Ok(Status::Ok);
 }
 
