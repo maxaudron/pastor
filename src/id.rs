@@ -29,14 +29,15 @@ impl<'a> fmt::Display for PasteId<'a> {
 
 fn valid_id(id: &str) -> bool {
     let id = crate::file::get_without_extension(id);
+    let func = |acc, it: &&'static str| if it.len() > acc { it.len() } else { acc };
     let adj_max_length =
         DICT_ADJ
             .iter()
-            .fold(0, |acc, it| if it.len() > acc { it.len() } else { acc });
+            .fold(0, func);
     let noun_max_length =
         DICT_NOUN
             .iter()
-            .fold(0, |acc, it| if it.len() > acc { it.len() } else { acc });
+            .fold(0, func);
     let max_length = adj_max_length + noun_max_length;
     id.chars().all(|c| c >= 'a' && c <= 'z') && id.len() <= max_length
 }
