@@ -27,7 +27,7 @@ impl<'a> fmt::Display for PasteId<'a> {
     }
 }
 
-fn valid_id(id: &str) -> bool {
+fn id_is_valid(id: &str) -> bool {
     let id = crate::file::get_without_extension(id);
     let func = |acc, it: &&'static str| if it.len() > acc { it.len() } else { acc };
     let adj_max_length =
@@ -46,7 +46,7 @@ impl<'a> FromParam<'a> for PasteId<'a> {
     type Error = &'a RawStr;
 
     fn from_param(param: &'a RawStr) -> Result<PasteId<'a>, &'a RawStr> {
-        match valid_id(param) {
+        match id_is_valid(param) {
             true => Ok(PasteId(Cow::Borrowed(param))),
             false => Err(param),
         }
