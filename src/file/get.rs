@@ -14,7 +14,7 @@ pub fn get<'a>(filename: std::path::PathBuf) -> Result<File, Status> {
     Ok(file)
 }
 
-pub fn get_db(id: &String, db: &sled::Db) -> Result<crate::Paste, Status> {
+pub fn get_db<'a>(id: &str, db: &sled::Db) -> Result<crate::Paste<'a>, Status> {
     let id = file::get_without_extension(id);
     match db.get(id) {
         Ok(item) => match item {

@@ -1,6 +1,7 @@
 #![feature(proc_macro_hygiene, decl_macro)]
 extern crate multipart;
 
+use id::PasteId;
 use tracing::{Level, error, trace};
 use tracing_subscriber::FmtSubscriber;
 
@@ -60,20 +61,20 @@ fn static_file<'a>(path: PathBuf) -> Option<Response<'a>> {
 }
 
 #[get("/<id>?<lang>")]
-fn retrieve(
-    id: String,
+fn retrieve<'a>(
+    id: PasteId,
     lang: Option<String>,
     config: State<ConfigState>,
-) -> Result<Response, Status> {
-    let paste = file::get_db(&id, &config.db)?;
+) -> Result<Response<'a>, Status> {
+    let paste = file::get_db(id.0.as_ref(), &config.db)?;
     let now = Utc::now().timestamp();
 
     if paste.expires < now {
-        file::delete(file::build_path(&id, &config))?;
+        file::delete(file::build_path(id.0.as_ref(), &config))?;
         return Err(Status::Gone);
     }
 
-    let mut file = file::get(file::build_path(&id, &config))?;
+    let mut file = file::get(file::build_path(id.0.as_ref(), &config))?;
 
     let mut res = Response::new();
     res.set_status(Status::Ok);
@@ -217,8 +218,8 @@ extern crate serde_derive;
 extern crate bincode;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Paste {
-    id: String,
+pub struct Paste<'a> {
+    id: PasteId<'a>,
     created: i64,
     expires: i64,
     token: String,
@@ -226,9 +227,9 @@ pub struct Paste {
     ext: Option<String>,
 }
 
-impl Paste {
+impl Paste<'_> {
     #[tracing::instrument]
-    pub fn from_file(id: &str, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
+    pub fn from_file<'a>(id: &str, file: &mut std::fs::File) -> Result<Paste<'a>, rocket::http::Status> {
         let size = file.metadata().unwrap().len();
         let now = Utc::now().timestamp();
         let expiry = now + crate::util::expires(size);
@@ -248,7 +249,7 @@ impl Paste {
         let ext = util::ext_from_mime(&mime);
 
         Ok(Paste {
-            id: id.to_string(),
+            id: PasteId::new(id),
             created: now,
             expires: expiry,
             token,
