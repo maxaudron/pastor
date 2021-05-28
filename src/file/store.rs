@@ -12,11 +12,11 @@ use tracing::error;
 use crate::id;
 use crate::Paste;
 
-pub fn store_multipart<'a>(
+pub fn store_multipart(
     boundary: &str,
     paste: Data,
     config: &State<crate::ConfigState>,
-) -> Result<Vec<Paste<'a>>, Status> {
+) -> Result<Vec<Paste>, Status> {
     let mut pastes = Vec::new();
 
     let mut multipart = Multipart::with_body(paste.open(), boundary);
@@ -99,11 +99,11 @@ pub fn update(
     update_multipart(boundary, paste, config)
 }
 
-pub fn store<'a>(
+pub fn store(
     cont_type: &ContentType,
     paste: Data,
     config: &State<crate::ConfigState>,
-) -> Result<Vec<Paste<'a>>, Status> {
+) -> Result<Vec<Paste>, Status> {
     let (_, boundary) = cont_type
         .params()
         .find(|&(k, _)| k == "boundary")
@@ -148,7 +148,7 @@ fn create_file(config: &State<crate::ConfigState>) -> Result<(File, String), Sta
 }
 
 fn store_db(db: &sled::Db, paste: &Paste) {
-    db.insert(&paste.id.0.as_ref(), bincode::serialize(&paste).unwrap())
+    db.insert(&paste.id.id, bincode::serialize(&paste).unwrap())
         .unwrap();
     db.flush().unwrap();
 }

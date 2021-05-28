@@ -1,4 +1,4 @@
-use std::{borrow::Cow, fmt};
+use std::fmt;
 
 use rocket::{http::RawStr, request::FromParam};
 
@@ -13,22 +13,42 @@ pub fn create_id() -> String {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-pub struct PasteId<'a>(pub Cow<'a, str>);
+pub struct PasteId {
+    pub id: String,
+    pub ext: Option<String>,
+}
 
-impl PasteId<'_> {
-    pub fn new(id: &str) -> Self {
-        Self(Cow::Owned(id.to_string()))
+impl PasteId {
+    pub fn new(input: &str) -> Self {
+        let (id, ext) = if input.contains('.') {
+            let parts = input.split('.').collect::<Vec<&str>>();
+            let id_without = parts[0].to_string();
+            let ext = parts[1].to_string();
+            (id_without, Some(ext))
+        } else {
+            (input.to_string(), None)
+        };
+
+        Self {
+            id,
+            ext,
+        }
     }
 }
 
-impl<'a> fmt::Display for PasteId<'a> {
+impl<'a> fmt::Display for PasteId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
+        write!(f,
+               "{}{}",
+               self.id,
+               match &self.ext {
+                   Some(e) => format!(".{}", e),
+                   None => "".into(),
+               })
     }
 }
 
 fn id_is_valid(id: &str) -> bool {
-    let id = crate::file::get_without_extension(id);
     let func = |acc, it: &&'static str| if it.len() > acc { it.len() } else { acc };
     let adj_max_length =
         DICT_ADJ
@@ -42,12 +62,13 @@ fn id_is_valid(id: &str) -> bool {
     id.chars().all(|c| c >= 'a' && c <= 'z') && id.len() <= max_length
 }
 
-impl<'a> FromParam<'a> for PasteId<'a> {
+impl<'a> FromParam<'a> for PasteId {
     type Error = &'a RawStr;
 
-    fn from_param(param: &'a RawStr) -> Result<PasteId<'a>, &'a RawStr> {
-        match id_is_valid(param) {
-            true => Ok(PasteId(Cow::Borrowed(param))),
+    fn from_param(param: &'a RawStr) -> Result<PasteId, &'a RawStr> {
+        let paste_id = PasteId::new(param);
+        match id_is_valid(&paste_id.id) {
+            true => Ok(paste_id),
             false => Err(param),
         }
     }

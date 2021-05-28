@@ -1,8 +1,7 @@
-use crate::file;
 use rocket::http::Status;
 use std::fs::File;
 
-pub fn get<'a>(filename: std::path::PathBuf) -> Result<File, Status> {
+pub fn get(filename: std::path::PathBuf) -> Result<File, Status> {
     let file = File::open(&filename);
     match file {
         Err(_) => return Err(Status::NotFound),
@@ -14,8 +13,7 @@ pub fn get<'a>(filename: std::path::PathBuf) -> Result<File, Status> {
     Ok(file)
 }
 
-pub fn get_db<'a>(id: &str, db: &sled::Db) -> Result<crate::Paste<'a>, Status> {
-    let id = file::get_without_extension(id);
+pub fn get_db(id: &str, db: &sled::Db) -> Result<crate::Paste, Status> {
     match db.get(id) {
         Ok(item) => match item {
             Some(item) => {

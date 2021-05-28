@@ -60,21 +60,21 @@ fn static_file<'a>(path: PathBuf) -> Option<Response<'a>> {
     }
 }
 
-#[get("/<id>?<lang>")]
+#[get("/<paste_id>?<lang>")]
 fn retrieve<'a>(
-    id: PasteId,
+    paste_id: PasteId,
     lang: Option<String>,
     config: State<ConfigState>,
 ) -> Result<Response<'a>, Status> {
-    let paste = file::get_db(id.0.as_ref(), &config.db)?;
+    let paste = file::get_db(&paste_id.id, &config.db)?;
     let now = Utc::now().timestamp();
 
     if paste.expires < now {
-        file::delete(file::build_path(id.0.as_ref(), &config))?;
+        file::delete(file::build_path(&paste_id.id, &config))?;
         return Err(Status::Gone);
     }
 
-    let mut file = file::get(file::build_path(id.0.as_ref(), &config))?;
+    let mut file = file::get(file::build_path(&paste_id.id, &config))?;
 
     let mut res = Response::new();
     res.set_status(Status::Ok);
@@ -119,7 +119,7 @@ fn retrieve<'a>(
             );
 
             let mut context = tera::Context::new();
-            context.insert("id", &id);
+            context.insert("id", &paste_id.id);
             context.insert("lang", &l);
             context.insert("content", &html);
             let rendered_template = config.tera.render("retrieve", &context).unwrap();
@@ -141,16 +141,16 @@ fn retrieve<'a>(
     }
 }
 
-#[delete("/<id>?<token>")]
-fn delete(id: PasteId, token: String, config: State<ConfigState>) -> Result<Status, Status> {
-    let paste = file::get_db(id.0.as_ref(), &config.db)?;
+#[delete("/<paste_id>?<token>")]
+fn delete(paste_id: PasteId, token: String, config: State<ConfigState>) -> Result<Status, Status> {
+    let paste = file::get_db(&paste_id.id, &config.db)?;
 
     if paste.token != token {
         return Err(Status::Forbidden);
     }
 
-    file::delete(file::build_path(id.0.as_ref(), &config))?;
-    config.db.remove(id.0.as_ref()).unwrap();
+    file::delete(file::build_path(&paste_id.id, &config))?;
+    config.db.remove(paste_id.id).unwrap();
     return Ok(Status::Ok);
 }
 
@@ -218,8 +218,8 @@ extern crate serde_derive;
 extern crate bincode;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct Paste<'a> {
-    id: PasteId<'a>,
+pub struct Paste {
+    id: PasteId,
     created: i64,
     expires: i64,
     token: String,
@@ -227,9 +227,9 @@ pub struct Paste<'a> {
     ext: Option<String>,
 }
 
-impl Paste<'_> {
+impl Paste {
     #[tracing::instrument]
-    pub fn from_file<'a>(id: &str, file: &mut std::fs::File) -> Result<Paste<'a>, rocket::http::Status> {
+    pub fn from_file(id: &str, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
         let size = file.metadata().unwrap().len();
         let now = Utc::now().timestamp();
         let expiry = now + crate::util::expires(size);
