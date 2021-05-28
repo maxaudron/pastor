@@ -48,7 +48,10 @@ fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a
 }
 
 #[get("/static/<path..>")]
-fn static_file<'a>(path: PathBuf) -> Option<Response<'a>> {
+fn static_file(path: PathBuf) -> Option<Response<'static>> {
+    let mut res = Response::new();
+    res.set_status(Status::Ok);
+
     match path.to_str() {
         Some("styles/main.css") => {
             Some(
@@ -61,11 +64,11 @@ fn static_file<'a>(path: PathBuf) -> Option<Response<'a>> {
 }
 
 #[get("/<paste_id>?<lang>")]
-fn retrieve<'a>(
+fn retrieve(
     paste_id: PasteId,
     lang: Option<String>,
     config: State<ConfigState>,
-) -> Result<Response<'a>, Status> {
+) -> Result<Response, Status> {
     let paste = file::get_db(&paste_id.id, &config.db)?;
     let now = Utc::now().timestamp();
 
