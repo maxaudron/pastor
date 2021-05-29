@@ -80,6 +80,8 @@ Files
   Delete file:
   -----------------------------------------------------------------------------------
   $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
+  or
+  GET https://{{ url }}/delete/picturedsalters?token=aloofgremlins
   -----------------------------------------------------------------------------------
 
 Expiry
