@@ -1,0 +1,12 @@
+{% extends "base" %}
+
+{% block title %}
+pastor - delete result {{ id }}
+{% endblock title %}
+
+{% block content %}
+
+Successfully deleted:
+<pre><a href="/{{ id }}">https://{{ host }}/{{ id }}</a></pre>
+
+{% endblock content %}

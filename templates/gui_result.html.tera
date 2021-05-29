@@ -6,8 +6,9 @@ pastor - gui result
 
 {% block content %}
 
-View file: <pre><a href="/{{ id }}">https://{{ host }}/{{ id }}</a></pre> </br>
-Delete token: <pre>{{ token }}</pre> </br>
+<b>View file:</b> <pre><a href="/{{ id }}">https://{{ host }}/{{ id }}</a></pre> </br>
+<b>Delete token:</b> <pre>{{ token }}</pre>
 Curl: <pre>curl -X DELETE https://{{ host }}/{{ id }}?token={{ token }}</pre>
+GET: <pre><a href="/delete/{{ id }}?token={{ token }}">https://{{ host }}/delete/{{ id }}?token={{ token }}</a></pre>
 
 {% endblock content %}

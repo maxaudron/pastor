@@ -144,16 +144,34 @@ fn retrieve(
     }
 }
 
-#[delete("/<paste_id>?<token>")]
-fn delete(paste_id: PasteId, token: PasteId, config: State<ConfigState>) -> Result<Status, Status> {
-    let paste = file::get_db(&paste_id.id, &config.db)?;
+#[get("/delete/<id>?<token>")]
+fn delete_get<'a>(id: PasteId, token: PasteId, host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
+    match delete(&id.id, token, &config) {
+        Ok(_) => {
+            let mut context = tera::Context::new();
+            context.insert("id", &id);
+            context.insert("host", &host.0);
+            let rendered_template = config.tera.render("delete_result", &context).unwrap();
+            Ok(util::create_response_from_string(rendered_template, None))
+        },
+        Err(e) => Err(e),
+    }
+}
+
+#[delete("/<id>?<token>")]
+fn delete_delete(id: PasteId, token: PasteId, config: State<ConfigState>) -> Result<Status, Status> {
+    delete(&id.id, token, &config)
+}
+
+fn delete(id: &str, token: PasteId, config: &State<ConfigState>) -> Result<Status, Status> {
+    let paste = file::get_db(id, &config.db)?;
 
     if paste.token != token {
         return Err(Status::Forbidden);
     }
 
-    file::delete(file::build_path(&paste_id.id, &config))?;
-    config.db.remove(paste_id.id).unwrap();
+    file::delete(file::build_path(id, &config))?;
+    config.db.remove(id).unwrap();
     return Ok(Status::Ok);
 }
 
@@ -270,6 +288,7 @@ const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
 const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
 const GUI_TEMPLATE: &str = include_str!("../templates/gui.html.tera");
 const GUI_RESULT_TEMPLATE: &str = include_str!("../templates/gui_result.html.tera");
+const DELETE_RESULT_TEMPLATE: &str = include_str!("../templates/delete_result.html.tera");
 
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 
@@ -283,7 +302,7 @@ fn main() {
 
 
     rocket::ignite()
-        .mount("/", routes![index, gui, retrieve, create, delete, static_file])
+        .mount("/", routes![index, gui, retrieve, create, delete_get, delete_delete, static_file])
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
@@ -309,6 +328,7 @@ fn main() {
                         (format!("{}/retrieve.html.tera", s), Some("retrieve")),
                         (format!("{}/gui.html.tera", s), Some("gui")),
                         (format!("{}/gui_result.html.tera", s), Some("gui_result")),
+                        (format!("{}/delete_result_result.html.tera", s), Some("delete_result")),
                     ])
                     .unwrap();
                     tera
@@ -322,6 +342,7 @@ fn main() {
                         ("retrieve", RETRIEVE_TEMPLATE),
                         ("gui", GUI_TEMPLATE),
                         ("gui_result", GUI_RESULT_TEMPLATE),
+                        ("delete_result", DELETE_RESULT_TEMPLATE),
                     ])
                     .unwrap();
                     tera
