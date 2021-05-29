@@ -301,7 +301,7 @@ fn main() {
                         (format!("{}/index.html.tera", s), Some("index")),
                         (format!("{}/retrieve.html.tera", s), Some("retrieve")),
                         (format!("{}/gui.html.tera", s), Some("gui")),
-                        (format!("{}/gui_result.html.tera", s), Some("gui")),
+                        (format!("{}/gui_result.html.tera", s), Some("gui_result")),
                     ])
                     .unwrap();
                     tera
