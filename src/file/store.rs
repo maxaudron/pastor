@@ -7,9 +7,9 @@ use rocket::Data;
 use rocket::State;
 
 use multipart::server::Multipart;
-use tracing::error;
+use tracing::{error, trace};
 
-use crate::id;
+use crate::id::{self, PasteId};
 use crate::Paste;
 
 pub fn store_multipart(
@@ -40,7 +40,10 @@ pub fn store_multipart(
                     Status::InternalServerError
                 })?;
 
-                let paste = Paste::from_file(&id, &mut file)?;
+                let id = PasteId::new(&id);
+
+                let paste = Paste::from_file(id, &mut file)?;
+                trace!("paste: {:?}", paste);
                 store_db(&config.db, &paste);
 
                 pastes.push(paste);

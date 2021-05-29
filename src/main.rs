@@ -179,14 +179,15 @@ pub fn create<'a>(
     let pastes = file::store(cont_type, data, &config)?;
 
     let mut urls = Vec::new();
-    for paste in &pastes {
+    for paste in pastes {
+        trace!("paste: {:?}", paste);
         urls.push(format!(
-            "https://{host}/{id}{ext} {token}\n",
+            "https://{host}/{id} {token}\n",
             host = host.0,
             id = paste.id,
-            ext = paste.ext.as_ref().unwrap_or(&"".to_string()),
             token = paste.token
-        ))
+        ));
+        trace!("urls: {:?}", urls);
     }
 
     if from_gui {
@@ -227,12 +228,11 @@ pub struct Paste {
     expires: i64,
     token: String,
     mime: String,
-    ext: Option<String>,
 }
 
 impl Paste {
     #[tracing::instrument]
-    pub fn from_file(id: &str, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
+    pub fn from_file(mut id: PasteId, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
         let size = file.metadata().unwrap().len();
         let now = Utc::now().timestamp();
         let expiry = now + crate::util::expires(size);
@@ -251,13 +251,16 @@ impl Paste {
         let mime = tree_magic::from_u8(&mime_bytes).to_string();
         let ext = util::ext_from_mime(&mime);
 
+        trace!("got file ext: {:?}", ext);
+
+        id.ext = ext;
+
         Ok(Paste {
-            id: PasteId::new(id),
+            id,
             created: now,
             expires: expiry,
             token,
             mime,
-            ext,
         })
     }
 }

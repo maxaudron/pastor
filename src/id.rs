@@ -34,6 +34,10 @@ impl PasteId {
             ext,
         }
     }
+
+    pub fn ext<'a>(&'a self) -> &'a str {
+        self.ext.as_ref().map_or("", |s| s.as_str())
+    }
 }
 
 impl fmt::Display for PasteId {

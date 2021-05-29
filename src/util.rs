@@ -46,12 +46,12 @@ where
 pub fn ext_from_mime(mime: &str) -> Option<String> {
     // 1. Check if our well-known mime types have an entry
     match DICT_MIME_EXT.get(mime) {
-        Some(ext) => Some(String::from(".") + ext),
+        Some(ext) => Some(ext.to_string()),
         None => {
             // 2. Check if mime_guess returns exactly one result
             match mime_guess::get_mime_extensions_str(mime) {
                 Some(guesses) if guesses.len() == 1 => {
-                    Some(String::from(".") + guesses[0])
+                    Some(guesses[0].to_string())
                 },
                 _ => {
                     // 3. If all fails, use no extension at all
