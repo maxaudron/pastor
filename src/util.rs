@@ -6,7 +6,15 @@ use rocket::Request;
 use rocket::Response;
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
-use crate::dict::DICT_MIME_EXT;
+use phf::phf_map;
+
+pub static MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
+    "text/plain" => "txt", // This one might be unnecessary
+    "image/png" => "png",
+    "image/jpeg" => "jpg",
+    "application/x-shellscript" => "sh",
+};
+
 
 pub struct HostHeader<'a>(pub &'a str);
 impl<'a, 'r> FromRequest<'a, 'r> for HostHeader<'a> {
@@ -45,7 +53,7 @@ where
 
 pub fn ext_from_mime(mime: &str) -> Option<String> {
     // 1. Check if our well-known mime types have an entry
-    match DICT_MIME_EXT.get(mime) {
+    match MIME_EXT.get(mime) {
         Some(ext) => Some(ext.to_string()),
         None => {
             // 2. Check if mime_guess returns exactly one result

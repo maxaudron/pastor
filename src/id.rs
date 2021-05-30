@@ -29,10 +29,7 @@ impl PasteId {
             (input.to_string(), None)
         };
 
-        Self {
-            id,
-            ext,
-        }
+        Self { id, ext }
     }
 
     pub fn ext<'a>(&'a self) -> &'a str {
@@ -56,17 +53,7 @@ impl fmt::Display for PasteId {
 }
 
 fn id_is_valid(id: &str) -> bool {
-    let func = |acc, it: &&'static str| if it.len() > acc { it.len() } else { acc };
-    let adj_max_length =
-        DICT_ADJ
-            .iter()
-            .fold(0, func);
-    let noun_max_length =
-        DICT_NOUN
-            .iter()
-            .fold(0, func);
-    let max_length = adj_max_length + noun_max_length;
-    id.chars().all(|c| c >= 'a' && c <= 'z') && id.len() <= max_length
+    id.chars().all(|c| c >= 'a' && c <= 'z') && id.len() <= 128
 }
 
 impl<'a> FromParam<'a> for PasteId {
