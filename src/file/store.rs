@@ -9,7 +9,7 @@ use rocket::State;
 use multipart::server::Multipart;
 use tracing::{error, trace};
 
-use crate::id::{self, PasteId};
+use crate::id::PasteId;
 use crate::Paste;
 
 pub fn store_multipart(
@@ -39,8 +39,6 @@ pub fn store_multipart(
                     error!("failed to seek file: {:?}", e);
                     Status::InternalServerError
                 })?;
-
-                let id = PasteId::new(&id);
 
                 let paste = Paste::from_file(id, &mut file)?;
                 trace!("paste: {:?}", paste);
@@ -128,9 +126,9 @@ fn update_file(config: &State<crate::ConfigState>, id: &str) -> Result<File, Sta
     Ok(file)
 }
 
-fn create_file(config: &State<crate::ConfigState>) -> Result<(File, String), Status> {
-    let id = id::create_id();
-    let filename = Path::new(&config.storage_dir).join(&id);
+fn create_file(config: &State<crate::ConfigState>) -> Result<(File, PasteId), Status> {
+    let id = PasteId::new();
+    let filename = Path::new(&config.storage_dir).join(&id.id);
 
     if filename.exists() {
         return Err(Status::Conflict);

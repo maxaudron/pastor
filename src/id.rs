@@ -1,16 +1,8 @@
 use std::fmt;
 
-use rocket::{http::RawStr, request::FromParam};
+use rocket::{http::RawStr, request::{FromFormValue, FromParam}};
 
 use crate::dict::*;
-
-pub fn create_id() -> String {
-    use rand::seq::SliceRandom;
-
-    let mut rng = rand::thread_rng();
-    return DICT_ADJ.choose(&mut rng).unwrap().to_string()
-        + &DICT_NOUN.choose(&mut rng).unwrap().to_string();
-}
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct PasteId {
@@ -18,8 +10,8 @@ pub struct PasteId {
     pub ext: Option<String>,
 }
 
-impl PasteId {
-    pub fn new(input: &str) -> Self {
+impl From<&str> for PasteId {
+    fn from(input: &str) -> Self {
         let (id, ext) = if input.contains('.') {
             let parts = input.split('.').collect::<Vec<&str>>();
             let id_without = parts[0].to_string();
@@ -31,9 +23,28 @@ impl PasteId {
 
         Self { id, ext }
     }
+}
+
+impl PasteId {
+    pub fn new() -> Self {
+        use rand::seq::SliceRandom;
+
+        let mut rng = rand::thread_rng();
+        let id = DICT_ADJ.choose(&mut rng).unwrap().to_string()
+            + &DICT_NOUN.choose(&mut rng).unwrap().to_string();
+
+        Self {
+            id,
+            ext: None,
+        }
+    }
 
     pub fn ext<'a>(&'a self) -> &'a str {
         self.ext.as_ref().map_or("", |s| s.as_str())
+    }
+
+    pub fn is_valid(&self) -> bool {
+        self.id.chars().all(|c| c >= 'a' && c <= 'z') && self.id.len() <= 128
     }
 }
 
@@ -52,18 +63,26 @@ impl fmt::Display for PasteId {
     }
 }
 
-fn id_is_valid(id: &str) -> bool {
-    id.chars().all(|c| c >= 'a' && c <= 'z') && id.len() <= 128
-}
-
 impl<'a> FromParam<'a> for PasteId {
     type Error = &'a RawStr;
 
     fn from_param(param: &'a RawStr) -> Result<PasteId, &'a RawStr> {
-        let paste_id = PasteId::new(param);
-        match id_is_valid(&paste_id.id) {
+        let paste_id = PasteId::from(param.as_str());
+        match paste_id.is_valid() {
             true => Ok(paste_id),
             false => Err(param),
+        }
+    }
+}
+
+impl<'a> FromFormValue<'a> for PasteId {
+    type Error = &'a RawStr;
+
+    fn from_form_value(form_value: &'a RawStr) -> Result<Self, Self::Error> {
+        let paste_id = PasteId::from(form_value.as_str());
+        match paste_id.is_valid() {
+            true => Ok(paste_id),
+            false => Err(form_value),
         }
     }
 }

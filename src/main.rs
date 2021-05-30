@@ -145,7 +145,7 @@ fn retrieve(
 }
 
 #[delete("/<paste_id>?<token>")]
-fn delete(paste_id: PasteId, token: String, config: State<ConfigState>) -> Result<Status, Status> {
+fn delete(paste_id: PasteId, token: PasteId, config: State<ConfigState>) -> Result<Status, Status> {
     let paste = file::get_db(&paste_id.id, &config.db)?;
 
     if paste.token != token {
@@ -226,7 +226,7 @@ pub struct Paste {
     id: PasteId,
     created: i64,
     expires: i64,
-    token: String,
+    token: PasteId,
     mime: String,
 }
 
@@ -237,7 +237,7 @@ impl Paste {
         let now = Utc::now().timestamp();
         let expiry = now + crate::util::expires(size);
 
-        let token = id::create_id();
+        let token = PasteId::new();
 
         let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
         file.take(2048).read_to_end(&mut mime_bytes)
