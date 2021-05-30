@@ -179,7 +179,7 @@ pub fn create<'a>(
     let pastes = file::store(cont_type, data, &config)?;
 
     let mut urls = Vec::new();
-    for paste in pastes {
+    for paste in &pastes {
         trace!("paste: {:?}", paste);
         urls.push(format!(
             "https://{host}/{id} {token}\n",
