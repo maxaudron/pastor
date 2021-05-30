@@ -42,13 +42,16 @@ impl PasteId {
 
 impl fmt::Display for PasteId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f,
-               "{}{}",
-               self.id,
-               match &self.ext {
-                   Some(e) => format!(".{}", e),
-                   None => "".into(),
-               })
+        f.write_str(&self.id)?;
+        match &self.ext {
+            Some(e) => {
+                f.write_str(".")?;
+                f.write_str(&e)?;
+            },
+            None => (),
+        };
+
+        Ok(())
     }
 }
 
