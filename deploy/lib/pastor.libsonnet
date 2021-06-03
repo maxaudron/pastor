@@ -3,15 +3,8 @@
     pastor: {
       name: 'pastor',
       image: {
-        repo: 'kube.cat/cocainefarm/gnulag-tools',
+        repo: 'kube.cat/cocainefarm/pastor',
         tag: 'latest',
-      },
-      rails_master_key_secret: 'pastor-rails',
-      postgres: {
-        username: 'pastor',
-        database: 'pastor',
-        host: 'postgresql',
-        secret_name: '',
       },
     },
   },
