@@ -49,7 +49,8 @@
           )
         ]
       )
-      + statefulset.spec.withVolumeClaimTemplates([$.pastor.pvc]),
+      + statefulset.spec.withVolumeClaimTemplates([$.pastor.pvc])
+      + statefulset.spec.withServiceName(self.service.metadata.name),
     service: k.util.serviceFor(self.statefulset) + k.core.v1.service.spec.withClusterIP("None"),
   },
 }
