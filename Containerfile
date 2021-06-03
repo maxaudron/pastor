@@ -31,7 +31,6 @@ RUN adduser pastor -D
 RUN mkdir /storage /templates && chown pastor templates storage
 VOLUME /storage /templates
 
-ENV ROCKET_TEMPLATE_DIR /templates/*
 ENV ROCKET_STORAGE_DIR /storage
 
 USER pastor
