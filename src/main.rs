@@ -141,7 +141,7 @@ fn retrieve(
         }
         None | _ => {
             if paste.mime.contains("text/") {
-                res.set_header(ContentType::parse_flexible("text/plain").unwrap());
+                res.set_header(ContentType::parse_flexible("text/plain; charset=utf-8").unwrap());
             }
 
             res.set_streamed_body(file);
