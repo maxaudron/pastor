@@ -2,7 +2,7 @@
 extern crate multipart;
 
 use id::PasteId;
-use tracing::{Level, error, trace};
+use tracing::{Level, error, trace, warn};
 use tracing_subscriber::FmtSubscriber;
 
 #[macro_use]
@@ -155,7 +155,7 @@ fn delete_get<'a>(id: PasteId, token: PasteId, host: HostHeader, config: State<C
     match delete(&id.id, token, &config) {
         Ok(_) => {
             let mut context = tera::Context::new();
-            context.insert("id", &id);
+            context.insert("id", &format!("{}", &id.id));
             context.insert("host", &host.0);
             let rendered_template = config.tera.render("delete_result", &context).unwrap();
             Ok(util::create_response_from_string(rendered_template, None))
@@ -202,26 +202,18 @@ pub fn create<'a>(
 
     let pastes = file::store(cont_type, data, &config)?;
 
-    let mut urls = Vec::new();
-    for paste in &pastes {
-        trace!("paste: {:?}", paste);
-        urls.push(format!(
-            "https://{host}/{id} {token}\n",
-            host = host.0,
-            id = paste.id,
-            token = paste.token
-        ));
-        trace!("urls: {:?}", urls);
-    }
-
     if from_gui {
         let mut context = tera::Context::new();
+
         // The gui is only able to create one upload at a time
-        if urls.len() > 1 {
-            println!("Warning: GUI somehow created more than one upload.");
+        if pastes.len() > 1 {
+            warn!("Warning: GUI created more than one upload.");
+        } else if pastes.len() < 1 {
+            return Err(Status::InternalServerError)
         }
-        context.insert("id", &pastes[0].id);
-        context.insert("token", &pastes[0].token);
+
+        context.insert("id", &format!("{}", &pastes[0].id));
+        context.insert("token", &format!("{}", &pastes[0].token));
         context.insert("host", &host.0);
         let rendered_template = config.tera.render("gui_result", &context)
             .unwrap();
@@ -229,6 +221,18 @@ pub fn create<'a>(
         let res = util::create_response_from_string(rendered_template, None);
         Ok(CreateReturnType::Response(res))
     } else {
+        let mut urls = Vec::new();
+        for paste in &pastes {
+            trace!("paste: {:?}", paste);
+            urls.push(format!(
+                "https://{host}/{id} {token}\n",
+                host = host.0,
+                id = paste.id,
+                token = paste.token
+            ));
+            trace!("urls: {:?}", urls);
+        }
+
         Ok(CreateReturnType::Raw(urls.join("\n")))
     }
 }
