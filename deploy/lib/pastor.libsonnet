@@ -35,7 +35,7 @@
             , util.image($._config.pastor.image)
           )
           + container.withPorts([port.new('http', 8000)])
-          + k.util.resourcesRequests('10m', '150m')
+          + k.util.resourcesRequests('10m', '150Mi')
           + util.httpProbes('http', '/', 30, 10, 5, 5)
           + container.withVolumeMounts(
             k.core.v1.volumeMount.new("data", "/storage", readOnly=false)
