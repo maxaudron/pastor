@@ -11,6 +11,7 @@ use rocket::fairing::AdHoc;
 use rocket::http::hyper::header::{ContentDisposition, DispositionType};
 use rocket::http::{ContentType, Status};
 use rocket::{Data, Response, State};
+use rocket::response::content::{Content};
 
 extern crate tree_magic;
 
@@ -45,6 +46,11 @@ fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a
     context.insert("url", host.0);
     let rendered_template = config.tera.render("index", &context).unwrap();
     Ok(util::create_response_from_string(rendered_template, None))
+}
+
+#[get("/favicon.ico")]
+fn favicon() -> Content<&'static [u8]> {
+    Content(ContentType::Icon, FAVICON.into())
 }
 
 #[get("/static/<path..>")]
@@ -291,6 +297,7 @@ const GUI_RESULT_TEMPLATE: &str = include_str!("../templates/gui_result.html.ter
 const DELETE_RESULT_TEMPLATE: &str = include_str!("../templates/delete_result.html.tera");
 
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
+const FAVICON: &[u8] = include_bytes!("../static/favicon.ico");
 
 fn main() {
     let subscriber = FmtSubscriber::builder()
@@ -302,7 +309,7 @@ fn main() {
 
 
     rocket::ignite()
-        .mount("/", routes![index, gui, retrieve, create, delete_get, delete_delete, static_file])
+        .mount("/", routes![index, gui, retrieve, create, delete_get, delete_delete, static_file, favicon])
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
