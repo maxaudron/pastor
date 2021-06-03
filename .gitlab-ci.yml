@@ -8,6 +8,8 @@ stages:
   - build
   - diff
   - deploy
+  - publish
+  - release
 
 variables:
   RUST_BASE_IMAGE: docker.io/rustlang/rust:nightly-alpine3.12
