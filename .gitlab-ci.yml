@@ -1,8 +1,13 @@
 include:
   - project: "cocainefarm/templates/ci"
-    file: "/container.tags.yaml"
-  - project: "cocainefarm/templates/ci"
     file: "/rust.yaml"
+  - project: "cocainefarm/templates/ci"
+    file: "/tanka.base.yaml"
+
+stages:
+  - build
+  - diff
+  - deploy
 
 variables:
   RUST_BASE_IMAGE: docker.io/rustlang/rust:nightly-alpine3.12
