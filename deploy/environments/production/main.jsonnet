@@ -19,7 +19,11 @@ function(tag, namespace, envSlug=null, projectPathSlug=null)
         statefulset+:
           k.apps.v1.statefulSet.spec.template.metadata.withAnnotationsMixin(
             $.spec.resourceDefaults.annotations),
-        ingress: util.ingressFor(super.service, "beta.c-v.sh", "c-v-sh-tls")
+        ingress: util.ingressFor(super.service, "c-v.sh", "c-v-sh-tls")
+          + k.networking.v1.ingress.metadata.withAnnotationsMixin({
+                "kubernetes.io/tls-acme": "true",
+                "nginx.ingress.kubernetes.io/proxy-body-size": "4G"
+          })
       },
     },
   }
