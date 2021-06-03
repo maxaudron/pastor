@@ -71,7 +71,7 @@ local util(k) = {
 
     withStorageClass(storageClass):: {
       spec+: {
-        storageClass: storageClass,
+        storageClassName: storageClass,
       },
     },
 
