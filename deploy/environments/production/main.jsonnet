@@ -7,7 +7,7 @@ function(tag, namespace, envSlug=null, projectPathSlug=null)
     _config:: self.data._config,
     pastor:: self.data.pastor,
     data: (import 'pastor.libsonnet') + {
-      config+:: {
+      _config+:: {
         pastor+: {
           image+: {
             tag: tag,
