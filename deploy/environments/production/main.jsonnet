@@ -7,6 +7,13 @@ function(tag, namespace, envSlug=null, projectPathSlug=null)
     _config:: self.data._config,
     pastor:: self.data.pastor,
     data: (import 'pastor.libsonnet') + {
+      config+:: {
+        pastor+: {
+          image+: {
+            tag: tag,
+          },
+        },
+      },
       pastor+: {
         pvc+:: util.volumeClaimTemplate.withStorageClass("ssd"),
         statefulset+:
