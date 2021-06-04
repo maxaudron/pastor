@@ -88,6 +88,11 @@ GUI
 
 A graphical user interface is available at: <a href="/gui">https://{{ url }}/gui</a>
 
+Source
+=====
+
+The source code can be found at: <a href="https://gitlab.com/cocainefarm/pastor">https://gitlab.com/cocainefarm/pastor</a>
+
   </pre>
 </div>
 {% endblock content %}

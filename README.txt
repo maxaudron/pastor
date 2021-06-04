@@ -120,3 +120,9 @@ GUI
 =====
 
 A graphical user interface is available at: https://{{ url }}/gui
+
+
+Source
+=====
+
+The source code can be found at: https://gitlab.com/cocainefarm/pastor
