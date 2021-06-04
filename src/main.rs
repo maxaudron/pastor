@@ -213,6 +213,7 @@ pub fn create<'a>(
         }
 
         context.insert("id", &format!("{}", &pastes[0].id));
+        context.insert("mime", &format!("{}", &pastes[0].mime));
         context.insert("token", &format!("{}", &pastes[0].token));
         context.insert("host", &host.0);
         let rendered_template = config.tera.render("gui_result", &context)

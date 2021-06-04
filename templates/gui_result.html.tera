@@ -6,8 +6,18 @@ pastor - gui result
 
 {% block content %}
 
-<b>View file:</b> <pre><a href="/{{ id }}">https://{{ host }}/{{ id }}</a></pre> </br>
-<b>Delete token:</b> <pre>{{ token }}</pre>
+<b>View file:</b>
+<pre><a href="/{{ id }}">https://{{ host }}/{{ id }}</a></pre>
+{% if mime == "text/plain" %}
+<div title="Change the lang param yourself">
+  <pre><a href="/{{ id }}?lang=auto">https://{{ host }}/{{ id }}?lang=auto</a></pre>
+</div>
+{% endif %}
+
+</br>
+
+<b>Delete token:</b>
+<pre>{{ token }}</pre>
 Curl: <pre>curl -X DELETE https://{{ host }}/{{ id }}?token={{ token }}</pre>
 GET: <pre><a href="/delete/{{ id }}?token={{ token }}">https://{{ host }}/delete/{{ id }}?token={{ token }}</a></pre>
 
