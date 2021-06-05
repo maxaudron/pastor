@@ -20,4 +20,24 @@ pastor - gui
     </div>
 </div>
 
+<script>
+  const submitPaste = document.getElementById("submit_paste");
+  submitPaste.setAttribute("disabled", true);
+
+  const submitFile = document.getElementById("submit_file");
+  submitPaste.setAttribute("disabled", true);
+
+  function handleTextAreaChange(e) {
+    const content = e.target.value;
+    if (content.length === 0) {
+      submitPaste.setAttribute("disabled", true);
+    } else {
+      submitPaste.removeAttribute("disabled");
+    }
+  }
+
+  const textArea = document.querySelector("textarea");
+  textArea.oninput = handleTextAreaChange;
+</script>
+
 {% endblock content %}
