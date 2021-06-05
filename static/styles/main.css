@@ -44,7 +44,7 @@ pre {
   align-items: center;
 }
 
-.gui > .buttons > #submit_paste {
+.gui > .buttons > #submit-paste {
   margin-right: 0.5em;
 }
 
@@ -53,7 +53,7 @@ pre {
   margin-right: 0.25em;
 }
 
-.gui > .buttons > .file-area-outer > #submit_file {
+.gui > .buttons > .file-area-outer > #submit-file {
   margin-top: 0.75em;
 }
 
@@ -65,6 +65,7 @@ pre {
   margin-top: 0.25em;
 }
 
+/* Pure CSS file area adapted from https://stackoverflow.com/a/45249452/4644044 */
 .gui > .buttons > .file-area-outer > .file-area {
   width: 100%;
   position: relative;

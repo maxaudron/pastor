@@ -9,30 +9,30 @@ pastor - gui
 <div class="gui">
     <h1><a href="/">pastor</a> - gui</h1>
 
-    <textarea name="paste_content" form="paste_form_paste" placeholder="Paste text here…"></textarea>
-    <form action="/?from_gui=true" id="paste_form_paste" method="POST" enctype="multipart/form-data"></form>
-    <form action="/?from_gui=true" id="paste_form_file" method="POST" enctype="multipart/form-data"></form>
+    <textarea name="paste-content" form="paste-form-paste" placeholder="Paste text here…"></textarea>
+    <form action="/?from_gui=true" id="paste-form-paste" method="POST" enctype="multipart/form-data"></form>
+    <form action="/?from_gui=true" id="paste-form-file" method="POST" enctype="multipart/form-data"></form>
     <div class="buttons">
-        <input id="submit_paste" type="submit" value="Submit paste" form="paste_form_paste">
+        <input id="submit-paste" type="submit" value="Submit paste" form="paste-form-paste">
         <p>or</p>
         <div class="file-area-outer">
           <div class="file-area">
-              <input id="input_file" name="paste_content" type="file" form="paste_form_file" required="required">
+              <input id="input_file" name="paste-content" type="file" form="paste-form-file" required="required">
               <div class="file-dummy">
                   <span class="default">Click to select file, or drag it here</span>
                   <span class="success">File is selected, hover for name</span>
               </div>
           </div>
-          <input id="submit_file" type="submit" value="Submit file" form="paste_form_file">
+          <input id="submit-file" type="submit" value="Submit file" form="paste-form-file">
         </div>
     </div>
 </div>
 
 <script>
-  const submitPaste = document.getElementById("submit_paste");
+  const submitPaste = document.getElementById("submit-paste");
   submitPaste.setAttribute("disabled", true);
 
-  const submitFile = document.getElementById("submit_file");
+  const submitFile = document.getElementById("submit-file");
   submitFile.setAttribute("disabled", true);
 
   function handleTextAreaChange(e) {
