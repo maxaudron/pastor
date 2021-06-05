@@ -263,6 +263,9 @@ impl Paste {
     #[tracing::instrument]
     pub fn from_file(mut id: PasteId, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
         let size = file.metadata().unwrap().len();
+        if size == 0 {
+            return Err(Status::BadRequest);
+        }
         let now = Utc::now().timestamp();
         let expiry = now + crate::util::expires(size);
 
