@@ -39,17 +39,28 @@ pre {
 
 .gui > .buttons {
   margin-top: 1em;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 .gui > .buttons > #submit_paste {
   margin-right: 0.5em;
 }
 
+.gui > .buttons > p {
+  margin: 0;
+  margin-right: 0.25em;
+}
+
 .gui > .buttons > .file-area-outer > #submit_file {
-  margin-top: 0.25em;
+  margin-top: 0.75em;
 }
 
 .gui > .buttons > .file-area-outer {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   width: 25vw;
   margin-top: 0.25em;
 }

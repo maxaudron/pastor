@@ -14,7 +14,7 @@ pastor - gui
     <form action="/?from_gui=true" id="paste_form_file" method="POST" enctype="multipart/form-data"></form>
     <div class="buttons">
         <input id="submit_paste" type="submit" value="Submit paste" form="paste_form_paste">
-	or
+        <p>or</p>
         <div class="file-area-outer">
           <div class="file-area">
               <input id="input_file" name="paste_content" type="file" form="paste_form_file" required="required">
