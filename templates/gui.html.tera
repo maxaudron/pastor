@@ -15,8 +15,16 @@ pastor - gui
     <div class="buttons">
         <input id="submit_paste" type="submit" value="Submit paste" form="paste_form_paste">
 	or
-        <input id="submit_file" type="submit" value="Submit file" form="paste_form_file">
-	<input id="input_file" name="paste_content" type="file" form="paste_form_file">
+        <div class="file-area-outer">
+          <div class="file-area">
+              <input id="input_file" name="paste_content" type="file" form="paste_form_file" required="required">
+              <div class="file-dummy">
+                  <span class="default">Click to select file, or drag it here</span>
+                  <span class="success">File is selected, hover for name</span>
+              </div>
+          </div>
+          <input id="submit_file" type="submit" value="Submit file" form="paste_form_file">
+        </div>
     </div>
 </div>
 
