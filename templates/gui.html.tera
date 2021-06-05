@@ -25,7 +25,7 @@ pastor - gui
   submitPaste.setAttribute("disabled", true);
 
   const submitFile = document.getElementById("submit_file");
-  submitPaste.setAttribute("disabled", true);
+  submitFile.setAttribute("disabled", true);
 
   function handleTextAreaChange(e) {
     const content = e.target.value;
@@ -36,8 +36,22 @@ pastor - gui
     }
   }
 
+  function handleInputFileChange(e) {
+    const filePath = e.target.value;
+    const fileSize = e.target.files[0].size;
+
+    if (filePath.length !== 0 && fileSize !== 0) {
+      submitFile.removeAttribute("disabled");
+    } else {
+      submitFile.setAttribute("disabled", true);
+    }
+  }
+
   const textArea = document.querySelector("textarea");
   textArea.oninput = handleTextAreaChange;
+
+  const inputFile = document.getElementById("input_file");
+  inputFile.onchange = handleInputFileChange;
 </script>
 
 {% endblock content %}
