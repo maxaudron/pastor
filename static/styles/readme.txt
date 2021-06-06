@@ -1,2 +1,2 @@
-Generate main.css via:
-sass main.scss main.css
+Generate CSS from SCSS via
+./generate-from-scss.sh
