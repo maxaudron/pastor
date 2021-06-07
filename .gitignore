@@ -1,5 +1,4 @@
 /target
 /storage
 /test-data
-.sass-cache
-*.css.map
+*.css

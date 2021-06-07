@@ -1,2 +1,1 @@
-Generate CSS from SCSS via
-./generate-from-scss.sh
+CSS is generated at build-time via build.rs
