@@ -1,10 +1,9 @@
-use glob::glob;
 use std::fs::File;
 use std::io::prelude::*;
 
 /// Goes through all SCSS files and generates CSS files.
 fn main() -> Result<(), Box<grass::Error>> {
-    for entry in glob("static/styles/*.scss").expect("Failed to read glob pattern") {
+    for entry in glob::glob("static/styles/*.scss").expect("Failed to read glob pattern") {
         match entry {
             Ok(path) => generate_css(path.to_str().unwrap())?,
             Err(e) => println!("{:?}", e),
@@ -28,7 +27,7 @@ fn generate_css(scss_path: &str) -> Result<(), Box<grass::Error>> {
     buffer.write_all(sass.as_bytes())?;
 
     // This instructs cargo to rerun this build script if this input file has changed.
-    // Since the directory method above does not work, this also means if a new file is added, 
+    // Since the directory method above does not work, this also means if a new file is added,
     // a change in an existing file must be made for cargo to start tracking the new file.
     println!("cargo:rerun-if-changed={}", scss_path);
 
