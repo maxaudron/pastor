@@ -310,8 +310,7 @@ fn main() {
     tracing::subscriber::set_global_default(subscriber)
         .expect("setting default subscriber failed");
 
-
-    let r = rocket::ignite()
+    rocket::ignite()
         .mount("/", routes![index, gui, retrieve, create, delete_get, delete_delete, static_file, favicon])
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
@@ -372,8 +371,6 @@ fn main() {
                 syntax_set: SyntaxSet::load_defaults_newlines(),
                 theme_set: ThemeSet::load_defaults(),
             }))
-        }));
-
-
-    r.launch();
+        }))
+        .launch();
 }

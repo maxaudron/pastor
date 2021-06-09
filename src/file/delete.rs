@@ -23,7 +23,7 @@ pub fn deletion_routine(storage_dir: &str, db: &sled::Db) {
 
         let paths = fs::read_dir(storage_dir).unwrap();
 
-        for (i, path) in paths.enumerate() {
+        for path in paths {
             let file_path = path.as_ref().unwrap().path();
             let file_name = path.as_ref().unwrap().file_name();
             let file_name = file_name.to_str().unwrap();
@@ -36,8 +36,6 @@ pub fn deletion_routine(storage_dir: &str, db: &sled::Db) {
 
             let now = Utc::now().timestamp();
             if paste.expires < now {
-            // if i % 2 == 0 {
-            // if false {
                 println!(
                     "Deleting: {}. (Expiration date: {}, Now: {})",
                     file_name,
