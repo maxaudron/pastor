@@ -1,4 +1,5 @@
 use std::{fs, thread, time::Duration};
+use std::env;
 
 use chrono::{TimeZone, Utc};
 use rocket::http::Status;
@@ -14,7 +15,10 @@ pub fn delete(filename: std::path::PathBuf) -> Result<Status, Status> {
 
 pub fn deletion_routine(storage_dir: &str, db: &sled::Db) {
     loop {
-        thread::sleep(Duration::from_millis(10_000));
+        let interval = env::var_os("DELETION_INTERVAL_MS")
+            .map_or(60_000, |x| x.to_str().unwrap().parse::<u64>().unwrap());
+        println!("Using deletion routine interval: {} ms", interval);
+        thread::sleep(Duration::from_millis(interval));
         println!("Running deletion check");
 
         let paths = fs::read_dir(storage_dir).unwrap();
