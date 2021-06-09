@@ -1,6 +1,6 @@
 use std::{fs, thread, time::Duration};
 
-use chrono::Utc;
+use chrono::{TimeZone, Utc};
 use rocket::http::Status;
 
 use crate::file::get_db;
@@ -34,7 +34,12 @@ pub fn deletion_routine(storage_dir: &str, db: &sled::Db) {
             if paste.expires < now {
             // if i % 2 == 0 {
             // if false {
-                println!("Deleting: {}", file_name);
+                println!(
+                    "Deleting: {}. (Expiration date: {}, Now: {})",
+                    file_name,
+                    Utc.timestamp(paste.expires, 0).to_string(),
+                    Utc.timestamp(now, 0).to_string(),
+                );
                 delete(file_path).unwrap();
                 // This will actually remove it from the original database as well:
                 db.remove(&file_name).unwrap();
