@@ -15,6 +15,7 @@ use rocket::response::content::{Content};
 
 extern crate tree_magic;
 
+use std::convert::TryInto;
 use std::thread;
 use std::vec::Vec;
 
@@ -77,6 +78,12 @@ fn retrieve(
     config: State<ConfigState>,
 ) -> Result<Response, Status> {
     let paste = file::get_db(&paste_id.id, &config.db)?;
+    let now = Utc::now().timestamp();
+
+    if paste.expires < now {
+        file::delete(file::build_path(&paste_id.id, &config))?;
+        return Err(Status::Gone);
+    }
 
     let mut file = file::get(file::build_path(&paste_id.id, &config))?;
 
@@ -360,9 +367,19 @@ fn main() {
 
             tera.build_inheritance_chains().unwrap();
 
+            let deletion_interval_ms = rocket
+                .config()
+                .get_int("deletion_interval_ms")
+                .unwrap_or(3_600_000);
             let storage_dir_cloned = storage_dir.clone();
             let db_cloned = db.clone();
-            thread::spawn(move || file::deletion_routine(&storage_dir_cloned, &db_cloned));
+            thread::spawn(move || {
+                file::deletion_routine(
+                    &storage_dir_cloned,
+                    &db_cloned,
+                    deletion_interval_ms.try_into().unwrap(),
+                )
+            });
 
             Ok(rocket.manage(ConfigState {
                 storage_dir,

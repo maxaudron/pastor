@@ -1,8 +1,8 @@
 use std::{fs, thread, time::Duration};
-use std::env;
 
 use chrono::{TimeZone, Utc};
 use rocket::http::Status;
+use tracing::debug;
 
 use crate::file::get_db;
 
@@ -13,13 +13,12 @@ pub fn delete(filename: std::path::PathBuf) -> Result<Status, Status> {
     }
 }
 
-pub fn deletion_routine(storage_dir: &str, db: &sled::Db) {
-    let interval = env::var_os("DELETION_INTERVAL_MS")
-        .map_or(60_000, |x| x.to_str().unwrap().parse::<u64>().unwrap());
-    println!("Using deletion routine interval: {} ms", interval);
+#[tracing::instrument]
+pub fn deletion_routine(storage_dir: &str, db: &sled::Db, interval_ms: u64) {
+    debug!("Using deletion routine interval: {} ms", interval_ms);
 
     loop {
-        thread::sleep(Duration::from_millis(interval));
+        thread::sleep(Duration::from_millis(interval_ms));
 
         let paths = fs::read_dir(storage_dir).unwrap();
 
@@ -36,7 +35,7 @@ pub fn deletion_routine(storage_dir: &str, db: &sled::Db) {
 
             let now = Utc::now().timestamp();
             if paste.expires < now {
-                println!(
+                debug!(
                     "Deleting: {}. (Expiration date: {}, Now: {})",
                     file_name,
                     Utc.timestamp(paste.expires, 0).to_string(),
