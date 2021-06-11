@@ -10,11 +10,16 @@ static CLIENT: Lazy<Client> = Lazy::new(|| {
     Client::new(rocket()).expect("Valid rocket instance")
 });
 
+static HOST_HEADER: Lazy<Header> = Lazy::new(|| {
+    Header::new("Host", "localhost:8000")
+});
+
+
 #[test]
 fn test_index() {
     let client: &Client = &*CLIENT;
     let mut req = client.get("/");
-    req.add_header(Header::new("Host", "localhost:8000"));
+    req.add_header(HOST_HEADER.clone());
     let mut res = req.dispatch();
     assert_eq!(res.status(), Status::Ok);
     assert!(
@@ -29,7 +34,7 @@ fn test_index() {
 fn test_gui() {
     let client: &Client = &*CLIENT;
     let mut req = client.get("/gui");
-    req.add_header(Header::new("Host", "localhost:8000"));
+    req.add_header(HOST_HEADER.clone());
     let mut res = req.dispatch();
     assert_eq!(res.status(), Status::Ok);
     assert!(
