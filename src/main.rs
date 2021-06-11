@@ -307,7 +307,7 @@ const DELETE_RESULT_TEMPLATE: &str = include_str!("../templates/delete_result.ht
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 const FAVICON: &[u8] = include_bytes!("../static/favicon.ico");
 
-fn main() {
+fn rocket() -> rocket::Rocket {
     let subscriber = FmtSubscriber::builder()
         .with_max_level(Level::TRACE)
         .finish();
@@ -374,5 +374,10 @@ fn main() {
                 theme_set: ThemeSet::load_defaults(),
             }))
         }))
-        .launch();
 }
+
+fn main() {
+    rocket().launch();
+}
+
+#[cfg(test)] mod tests;
