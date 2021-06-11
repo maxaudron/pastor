@@ -5,11 +5,12 @@ use rocket::http::Header;
 use rocket::local::Client;
 use rocket::http::Status;
 
-/// Global mutable singleton otherwise multiple tests fail
+/// Global mutable singleton of the LocalClient otherwise multiple tests fail
 static CLIENT: Lazy<Client> = Lazy::new(|| {
     Client::new(rocket()).expect("Valid rocket instance")
 });
 
+/// This is just for convenience
 static HOST_HEADER: Lazy<Header> = Lazy::new(|| {
     Header::new("Host", "localhost:8000")
 });
