@@ -30,7 +30,13 @@ fn test_gui() {
     let client: &Client = &*CLIENT;
     let mut req = client.get("/gui");
     req.add_header(Header::new("Host", "localhost:8000"));
-    let res = req.dispatch();
+    let mut res = req.dispatch();
     assert_eq!(res.status(), Status::Ok);
+    assert!(
+        res
+            .body_string()
+            .expect("Content in body")
+            .contains("<h1><a href=\"/\">pastor</a> - gui</h1>")
+    );
 }
 
