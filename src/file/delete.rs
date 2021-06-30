@@ -23,11 +23,12 @@ pub fn cleanup_routine(storage_dir: &str, db: &sled::Db, interval_ms: u64) {
 }
 
 fn cleanup(storage_dir: &str, db: &sled::Db) {
+    let now = Utc::now().timestamp();
+
     db.iter().filter_map(|s| s.ok()).for_each(|(k, v)| {
         let name: &str = std::str::from_utf8(&k).unwrap();
         let paste: crate::Paste = bincode::deserialize(&v).unwrap();
 
-        let now = Utc::now().timestamp();
         if paste.expires < now {
             debug!(
                 "Deleting: {}. (Expiration date: {}, Now: {})",
