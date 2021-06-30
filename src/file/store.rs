@@ -1,6 +1,6 @@
-use std::{io::Seek, path::Path};
 use std::fs::File;
 use std::fs::OpenOptions;
+use std::{io::Seek, path::Path};
 
 use rocket::http::{ContentType, Status};
 use rocket::Data;
@@ -126,7 +126,7 @@ fn update_file(config: &State<crate::ConfigState>, id: &str) -> Result<File, Sta
     Ok(file)
 }
 
-fn create_file(config: &State<crate::ConfigState>) -> Result<(File, PasteId), Status> {
+pub(crate) fn create_file(config: &State<crate::ConfigState>) -> Result<(File, PasteId), Status> {
     let id = PasteId::new();
     let filename = Path::new(&config.storage_dir).join(&id.id);
 
@@ -148,7 +148,7 @@ fn create_file(config: &State<crate::ConfigState>) -> Result<(File, PasteId), St
     Ok((file, id))
 }
 
-fn store_db(db: &sled::Db, paste: &Paste) {
+pub(crate) fn store_db(db: &sled::Db, paste: &Paste) {
     db.insert(&paste.id.id, bincode::serialize(&paste).unwrap())
         .unwrap();
     db.flush().unwrap();

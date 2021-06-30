@@ -20,6 +20,7 @@ multipart = "0.17"
 syntect = "4.5"
 tera = "1.8"
 phf = { version = "0.8", features = ["macros"] }
+anyhow = "1"
 
 tracing = "0.1"
 tracing-subscriber = "0.2"
@@ -27,3 +28,9 @@ tracing-subscriber = "0.2"
 [build-dependencies]
 grass = "0.10.4"
 glob = "0.3.0"
+
+[features]
+default = ["iter_db"]
+
+iter_db = []
+iter_files = []

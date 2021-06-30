@@ -1,8 +1,8 @@
-#![feature(proc_macro_hygiene, decl_macro)]
-extern crate multipart;
+#![feature(proc_macro_hygiene, decl_macro, test, termination_trait_lib)]
+extern crate test;
 
 use id::PasteId;
-use tracing::{Level, error, trace, warn};
+use tracing::{error, trace, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
 #[macro_use]
@@ -374,7 +374,7 @@ fn main() {
             let storage_dir_cloned = storage_dir.clone();
             let db_cloned = db.clone();
             thread::spawn(move || {
-                file::deletion_routine(
+                file::cleanup_routine(
                     &storage_dir_cloned,
                     &db_cloned,
                     deletion_interval_ms.try_into().unwrap(),
