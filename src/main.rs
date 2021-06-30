@@ -10,8 +10,8 @@ extern crate rocket;
 use rocket::fairing::AdHoc;
 use rocket::http::hyper::header::{ContentDisposition, DispositionType};
 use rocket::http::{ContentType, Status};
+use rocket::response::content::Content;
 use rocket::{Data, Response, State};
-use rocket::response::content::{Content};
 
 extern crate tree_magic;
 
@@ -61,12 +61,10 @@ fn static_file(path: PathBuf) -> Option<Response<'static>> {
     res.set_status(Status::Ok);
 
     match path.to_str() {
-        Some("styles/main.css") => {
-            Some(
-                util::create_response_from_string(MAIN_CSS.into(),
-                ContentType::CSS.into()),
-            )
-        }
+        Some("styles/main.css") => Some(util::create_response_from_string(
+            MAIN_CSS.into(),
+            ContentType::CSS.into(),
+        )),
         _ => None,
     }
 }
@@ -153,7 +151,12 @@ fn retrieve(
 }
 
 #[get("/delete/<id>?<token>")]
-fn delete_get<'a>(id: PasteId, token: PasteId, host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
+fn delete_get<'a>(
+    id: PasteId,
+    token: PasteId,
+    host: HostHeader,
+    config: State<ConfigState>,
+) -> Result<Response<'a>, Status> {
     match delete(&id.id, token, &config) {
         Ok(_) => {
             let mut context = tera::Context::new();
@@ -161,13 +164,17 @@ fn delete_get<'a>(id: PasteId, token: PasteId, host: HostHeader, config: State<C
             context.insert("host", &host.0);
             let rendered_template = config.tera.render("delete_result", &context).unwrap();
             Ok(util::create_response_from_string(rendered_template, None))
-        },
+        }
         Err(e) => Err(e),
     }
 }
 
 #[delete("/<id>?<token>")]
-fn delete_delete(id: PasteId, token: PasteId, config: State<ConfigState>) -> Result<Status, Status> {
+fn delete_delete(
+    id: PasteId,
+    token: PasteId,
+    config: State<ConfigState>,
+) -> Result<Status, Status> {
     delete(&id.id, token, &config)
 }
 
@@ -211,15 +218,14 @@ pub fn create<'a>(
         if pastes.len() > 1 {
             warn!("Warning: GUI created more than one upload.");
         } else if pastes.len() < 1 {
-            return Err(Status::InternalServerError)
+            return Err(Status::InternalServerError);
         }
 
         context.insert("id", &format!("{}", &pastes[0].id));
         context.insert("mime", &format!("{}", &pastes[0].mime));
         context.insert("token", &format!("{}", &pastes[0].token));
         context.insert("host", &host.0);
-        let rendered_template = config.tera.render("gui_result", &context)
-            .unwrap();
+        let rendered_template = config.tera.render("gui_result", &context).unwrap();
 
         let res = util::create_response_from_string(rendered_template, None);
         Ok(CreateReturnType::Response(res))
@@ -263,7 +269,10 @@ pub struct Paste {
 
 impl Paste {
     #[tracing::instrument]
-    pub fn from_file(mut id: PasteId, file: &mut std::fs::File) -> Result<Paste, rocket::http::Status> {
+    pub fn from_file(
+        mut id: PasteId,
+        file: &mut std::fs::File,
+    ) -> Result<Paste, rocket::http::Status> {
         let size = file.metadata().unwrap().len();
         if size == 0 {
             return Err(Status::BadRequest);
@@ -274,11 +283,10 @@ impl Paste {
         let token = PasteId::new();
 
         let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
-        file.take(2048).read_to_end(&mut mime_bytes)
-            .map_err(|e| {
-                error!("failed to read file: {:?}", e);
-                Status::InternalServerError
-            })?;
+        file.take(2048).read_to_end(&mut mime_bytes).map_err(|e| {
+            error!("failed to read file: {:?}", e);
+            Status::InternalServerError
+        })?;
 
         trace!("read bytes for mime parsing: {:x?}", mime_bytes);
 
@@ -314,11 +322,22 @@ fn main() {
         .with_max_level(Level::TRACE)
         .finish();
 
-    tracing::subscriber::set_global_default(subscriber)
-        .expect("setting default subscriber failed");
+    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
 
     rocket::ignite()
-        .mount("/", routes![index, gui, retrieve, create, delete_get, delete_delete, static_file, favicon])
+        .mount(
+            "/",
+            routes![
+                index,
+                gui,
+                retrieve,
+                create,
+                delete_get,
+                delete_delete,
+                static_file,
+                favicon
+            ],
+        )
         .attach(AdHoc::on_attach("Set Config", |rocket| {
             println!("{:?}", rocket.config().limits);
             println!("Adding config to managed state...");
@@ -344,7 +363,10 @@ fn main() {
                         (format!("{}/retrieve.html.tera", s), Some("retrieve")),
                         (format!("{}/gui.html.tera", s), Some("gui")),
                         (format!("{}/gui_result.html.tera", s), Some("gui_result")),
-                        (format!("{}/delete_result_result.html.tera", s), Some("delete_result")),
+                        (
+                            format!("{}/delete_result_result.html.tera", s),
+                            Some("delete_result"),
+                        ),
                     ])
                     .unwrap();
                     tera

@@ -1,6 +1,9 @@
 use std::fmt;
 
-use rocket::{http::RawStr, request::{FromFormValue, FromParam}};
+use rocket::{
+    http::RawStr,
+    request::{FromFormValue, FromParam},
+};
 
 use crate::dict::*;
 
@@ -33,10 +36,7 @@ impl PasteId {
         let id = DICT_ADJ.choose(&mut rng).unwrap().to_string()
             + &DICT_NOUN.choose(&mut rng).unwrap().to_string();
 
-        Self {
-            id,
-            ext: None,
-        }
+        Self { id, ext: None }
     }
 
     pub fn ext<'a>(&'a self) -> &'a str {
@@ -55,7 +55,7 @@ impl fmt::Display for PasteId {
             Some(e) => {
                 f.write_str(".")?;
                 f.write_str(&e)?;
-            },
+            }
             None => (),
         };
 

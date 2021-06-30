@@ -1,9 +1,13 @@
 use std::io::Cursor;
 
-use rocket::{http::{ContentType, Status}, request::FromRequest, response::Body};
 use rocket::Outcome;
 use rocket::Request;
 use rocket::Response;
+use rocket::{
+    http::{ContentType, Status},
+    request::FromRequest,
+    response::Body,
+};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 use phf::phf_map;
@@ -14,7 +18,6 @@ pub static MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
     "image/jpeg" => "jpg",
     "application/x-shellscript" => "sh",
 };
-
 
 pub struct HostHeader<'a>(pub &'a str);
 impl<'a, 'r> FromRequest<'a, 'r> for HostHeader<'a> {
@@ -58,19 +61,20 @@ pub fn ext_from_mime(mime: &str) -> Option<String> {
         None => {
             // 2. Check if mime_guess returns exactly one result
             match mime_guess::get_mime_extensions_str(mime) {
-                Some(guesses) if guesses.len() == 1 => {
-                    Some(guesses[0].to_string())
-                },
+                Some(guesses) if guesses.len() == 1 => Some(guesses[0].to_string()),
                 _ => {
                     // 3. If all fails, use no extension at all
                     None
                 }
             }
-        },
+        }
     }
 }
 
-pub fn create_response_from_string(content: String, content_type: Option<ContentType>) -> Response<'static> {
+pub fn create_response_from_string(
+    content: String,
+    content_type: Option<ContentType>,
+) -> Response<'static> {
     let mut res = Response::new();
     res.set_status(Status::Ok);
     res.set_header(content_type.unwrap_or(ContentType::HTML));
