@@ -1,8 +1,18 @@
 [package]
 name = "pastor"
+description = "The pastebin that hopefully doesn't suck"
+
 version = "0.10.0"
-authors = ["Max Audron <audron@cocaine.farm>", "Lorenz Leitner <lrnz.ltnr@gmail.com"]
+homepage = "https://gitlab.com/cocainefarm/pastor"
+repository = "https://gitlab.com/cocainefarm/pastor"
+documentation = "https://docs.rs/pastor"
+readme = "README.txt"
+
+authors = ["Max Audron <audron@cocaine.farm>", "Lorenz Leitner <lrnz.ltnr@gmail.com>"]
 edition = "2018"
+license = "ISC"
+
+include = ["static/**/*", "templates/**/*", "src/**/*", "Cargo.toml"]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
