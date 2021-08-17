@@ -2,7 +2,7 @@
 name = "pastor"
 description = "The pastebin that hopefully doesn't suck"
 
-version = "0.10.2"
+version = "0.10.3"
 homepage = "https://gitlab.com/cocainefarm/pastor"
 repository = "https://gitlab.com/cocainefarm/pastor"
 documentation = "https://docs.rs/pastor"
