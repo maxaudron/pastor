@@ -2,26 +2,22 @@
 # Cargo Build Stage
 # ------------------------------------------------------------------------------
 
-FROM rust:1.41 as cargo-build
-
-RUN apt-get update
-
-RUN apt-get install musl-tools -y
+FROM docker.io/rust:1.52-alpine as cargo-build
 
 RUN rustup default nightly && rustup update
-RUN rustup target add x86_64-unknown-linux-musl --toolchain=nightly
 
 WORKDIR /work
 
 COPY . .
 
-RUN cargo build --release --target=x86_64-unknown-linux-musl
+RUN apk add --no-cache musl-dev
+RUN cargo build --release
 
 # ------------------------------------------------------------------------------
 # Final Stage
 # ------------------------------------------------------------------------------
 
-FROM alpine:latest
+FROM docker.io/alpine:latest
 
 COPY --from=cargo-build /work/target/x86_64-unknown-linux-musl/release/pastor /usr/local/bin
 
