@@ -19,7 +19,7 @@ RUN cargo build --release
 
 FROM docker.io/alpine:latest
 
-COPY --from=cargo-build /work/target/x86_64-unknown-linux-musl/release/pastor /usr/local/bin
+COPY --from=cargo-build /work/target/release/pastor /usr/local/bin
 
 RUN apk add openssl
 RUN adduser pastor -D
