@@ -417,4 +417,5 @@ fn main() {
     rocket().launch();
 }
 
-#[cfg(test)] mod tests;
+#[cfg(test)]
+mod tests;
