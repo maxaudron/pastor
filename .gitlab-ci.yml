@@ -5,6 +5,7 @@ include:
     file: "/tanka.base.yaml"
 
 stages:
+  - test
   - build
   - diff
   - deploy
