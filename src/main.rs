@@ -318,11 +318,7 @@ const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 const FAVICON: &[u8] = include_bytes!("../static/favicon.ico");
 
 fn rocket() -> rocket::Rocket {
-    let subscriber = FmtSubscriber::builder()
-        .with_max_level(Level::TRACE)
-        .finish();
-
-    tracing::subscriber::set_global_default(subscriber).expect("setting default subscriber failed");
+    tracing_subscriber::fmt::init();
 
     rocket::ignite()
         .mount(
