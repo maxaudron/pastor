@@ -140,7 +140,10 @@ fn retrieve(
             Ok(res)
         }
         None | _ => {
-            if paste.mime.contains("text/") {
+            if paste.mime.contains("text/")
+                || paste.mime.contains("application/xhtml")
+                || paste.mime.contains("application/xml")
+            {
                 res.set_header(ContentType::parse_flexible("text/plain; charset=utf-8").unwrap());
             }
 
