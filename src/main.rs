@@ -1,8 +1,7 @@
-// #![feature(test)]
-//
-// extern crate test;
+#![cfg_attr(all(test, feature = "bench"), feature(test))]
+#[cfg(all(test, feature = "bench"))]
+extern crate test;
 
-use std::collections::HashMap;
 use std::path::PathBuf;
 use std::sync::Arc;
 use std::thread;
@@ -12,7 +11,7 @@ use rocket::data::{Limits, ToByteUnit};
 use tracing::{error, trace, warn};
 
 use rocket::fairing::AdHoc;
-use rocket::form::{DataField, Form, FromFormField, ValueField};
+use rocket::form::{Form, FromFormField};
 use rocket::http::hyper::header;
 use rocket::http::{ContentType, Header, Status};
 use rocket::response::content;

@@ -46,7 +46,7 @@ fn cleanup(storage_dir: &str, db: Arc<sled::Db>) {
     })
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "bench"))]
 mod tests {
     use std::{
         fs::OpenOptions,

@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::path::Path;
 
 use rocket::data::ToByteUnit;
