@@ -43,7 +43,7 @@ Installation
 
  To run pastor using the binary:
 
-   curl -Lo pastor https://gitlab.com/api/v4/projects/17469937/packages/generic/pastor/0.10.4/pastor_amd64_static
+   curl -Lo pastor https://gitlab.com/api/v4/projects/17469937/packages/generic/pastor/0.11.0/pastor_amd64_static
    chmod +x pastor
    ROCKET_STORAGE_DIR=<storage path> ./pastor
 
