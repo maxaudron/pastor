@@ -2,33 +2,30 @@
 # Cargo Build Stage
 # ------------------------------------------------------------------------------
 
-FROM docker.io/rust:1.52-alpine as cargo-build
-
-RUN rustup default nightly && rustup update
-
+FROM kube.cat/cocainefarm/rust:1.55.0 AS chef
 WORKDIR /work
 
+FROM chef AS planner
 COPY . .
+RUN cargo chef prepare --recipe-path recipe.json
 
-RUN apk add --no-cache musl-dev
+FROM chef AS builder
+COPY --from=planner /work/recipe.json recipe.json
+
+RUN cargo chef cook --release --recipe-path recipe.json
+
+COPY . .
 RUN cargo build --release
 
 # ------------------------------------------------------------------------------
 # Final Stage
 # ------------------------------------------------------------------------------
 
-FROM docker.io/alpine:latest
+FROM scratch
 
-COPY --from=cargo-build /work/target/release/pastor /usr/local/bin
+COPY --from=builder /work/target/release/pastor /usr/local/bin/pastor
 
-RUN apk add openssl
-RUN adduser pastor -D
-
-RUN mkdir /storage /templates && chown pastor templates storage
 VOLUME /storage /templates
-
-ENV ROCKET_STORAGE_DIR /storage
-
-USER pastor
+ENV ROCKET_STORAGE_DIR=/storage
 
 CMD ["/usr/local/bin/pastor"]
