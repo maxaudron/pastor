@@ -22,7 +22,7 @@
     {
       "source": {
         "git": {
-          "remote": "ssh://git@gitlab.com/cocainefarm/k8s/lib/util.git",
+          "remote": "https://gitlab.com/cocainefarm/k8s/lib/util.git",
           "subdir": ""
         }
       },
