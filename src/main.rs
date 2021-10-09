@@ -356,12 +356,14 @@ pub struct ConfigState {
 fn rocket() -> rocket::Rocket<Build> {
     tracing_subscriber::fmt::init();
 
-    let figment = rocket::Config::figment().merge((
-        "limits",
-        Limits::new()
-            .limit("forms", 10.gigabytes())
-            .limit("data-form", 10.gigabytes()),
-    ));
+    let figment = rocket::Config::figment()
+        .merge(("address", "0.0.0.0"))
+        .merge((
+            "limits",
+            Limits::new()
+                .limit("forms", 10.gigabytes())
+                .limit("data-form", 10.gigabytes()),
+        ));
 
     rocket::custom(figment)
         .mount(
