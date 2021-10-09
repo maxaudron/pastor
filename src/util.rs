@@ -1,16 +1,11 @@
-use std::io::Cursor;
-
-use rocket::Outcome;
+use rocket::outcome::Outcome;
+use rocket::request::FromRequest;
 use rocket::Request;
-use rocket::Response;
-use rocket::{
-    http::{ContentType, Status},
-    request::FromRequest,
-    response::Body,
-};
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 use phf::phf_map;
+
+use async_trait::async_trait;
 
 pub static MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
     "text/plain" => "txt", // This one might be unnecessary
@@ -20,10 +15,12 @@ pub static MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
 };
 
 pub struct HostHeader<'a>(pub &'a str);
-impl<'a, 'r> FromRequest<'a, 'r> for HostHeader<'a> {
+
+#[async_trait]
+impl<'r> FromRequest<'r> for HostHeader<'r> {
     type Error = ();
 
-    fn from_request(request: &'a Request) -> rocket::request::Outcome<Self, Self::Error> {
+    async fn from_request(request: &'r Request<'_>) -> rocket::request::Outcome<Self, Self::Error> {
         match request.headers().get_one("Host") {
             Some(h) => Outcome::Success(HostHeader(h)),
             None => Outcome::Forward(()),
@@ -69,17 +66,4 @@ pub fn ext_from_mime(mime: &str) -> Option<String> {
             }
         }
     }
-}
-
-pub fn create_response_from_string(
-    content: String,
-    content_type: Option<ContentType>,
-) -> Response<'static> {
-    let mut res = Response::new();
-    res.set_status(Status::Ok);
-    res.set_header(content_type.unwrap_or(ContentType::HTML));
-    let size = content.len() as u64;
-    let body = Body::Sized(Cursor::new(content), size);
-    res.set_raw_body(body);
-    res
 }

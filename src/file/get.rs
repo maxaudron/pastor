@@ -1,8 +1,8 @@
 use rocket::http::Status;
-use std::fs::File;
+use tokio::fs::File;
 
-pub fn get(filename: std::path::PathBuf) -> Result<File, Status> {
-    let file = File::open(&filename);
+pub async fn get(filename: std::path::PathBuf) -> Result<File, Status> {
+    let file = File::open(&filename).await;
     match file {
         Err(_) => return Err(Status::NotFound),
         _ => (),

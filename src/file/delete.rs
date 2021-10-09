@@ -1,4 +1,4 @@
-use std::{path::Path, thread, time::Duration};
+use std::{path::Path, sync::Arc, thread, time::Duration};
 
 use chrono::{TimeZone, Utc};
 use rocket::http::Status;
@@ -12,17 +12,20 @@ pub fn delete(filename: std::path::PathBuf) -> Result<Status, Status> {
 }
 
 #[tracing::instrument]
-pub fn cleanup_routine(storage_dir: &str, db: &sled::Db, interval_ms: u64) {
-    debug!("Using deletion routine interval: {} ms", interval_ms);
+pub fn cleanup_routine(db: Arc<sled::Db>, config: crate::config::AppConfig) {
+    debug!(
+        "Using deletion routine interval: {} ms",
+        config.deletion_interval_ms
+    );
 
     loop {
-        thread::sleep(Duration::from_millis(interval_ms));
+        thread::sleep(Duration::from_millis(config.deletion_interval_ms));
 
-        cleanup(storage_dir, db);
+        cleanup(&config.storage_dir, db.clone());
     }
 }
 
-fn cleanup(storage_dir: &str, db: &sled::Db) {
+fn cleanup(storage_dir: &str, db: Arc<sled::Db>) {
     let now = Utc::now().timestamp();
 
     db.iter().filter_map(|s| s.ok()).for_each(|(k, v)| {

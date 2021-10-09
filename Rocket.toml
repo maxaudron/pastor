@@ -1,19 +1,9 @@
-[development]
-address = "localhost"
-port = 8000
-keep_alive = 5
-log = "normal"
-storage_dir = "./storage"
-database_dir = "./storage/db"
-deletion_interval_ms = 3_600_000
-limits = { forms = 6710886400, png = 6710886400 }
-
-[production]
+[default]
 address = "0.0.0.0"
-port = 8000
-keep_alive = 5
-log = "critical"
+limits = { forms = "10 GB", data-form = "10 GB" }
+
+[debug]
 storage_dir = "./storage"
-database_dir = "./storage/db"
-deletion_interval_ms = 3_600_000
-limits = { forms = 6710886400 }
+
+[release]
+storage_dir = "/storage"

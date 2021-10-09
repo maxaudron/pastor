@@ -1,9 +1,6 @@
 use std::fmt;
 
-use rocket::{
-    http::RawStr,
-    request::{FromFormValue, FromParam},
-};
+use rocket::{form::FromFormField, request::FromParam};
 
 use crate::dict::*;
 
@@ -64,10 +61,10 @@ impl fmt::Display for PasteId {
 }
 
 impl<'a> FromParam<'a> for PasteId {
-    type Error = &'a RawStr;
+    type Error = &'a str;
 
-    fn from_param(param: &'a RawStr) -> Result<PasteId, &'a RawStr> {
-        let paste_id = PasteId::from(param.as_str());
+    fn from_param(param: &'a str) -> Result<PasteId, &'a str> {
+        let paste_id = PasteId::from(param);
         match paste_id.is_valid() {
             true => Ok(paste_id),
             false => Err(param),
@@ -75,14 +72,12 @@ impl<'a> FromParam<'a> for PasteId {
     }
 }
 
-impl<'a> FromFormValue<'a> for PasteId {
-    type Error = &'a RawStr;
-
-    fn from_form_value(form_value: &'a RawStr) -> Result<Self, Self::Error> {
-        let paste_id = PasteId::from(form_value.as_str());
+impl<'v> FromFormField<'v> for PasteId {
+    fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
+        let paste_id = PasteId::from(field.value);
         match paste_id.is_valid() {
             true => Ok(paste_id),
-            false => Err(form_value),
+            false => Err(field.unexpected().into()),
         }
     }
 }

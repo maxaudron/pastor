@@ -1,80 +1,120 @@
-#![feature(proc_macro_hygiene, decl_macro, test, termination_trait_lib)]
-extern crate test;
+// #![feature(test)]
+//
+// extern crate test;
 
-use id::PasteId;
-use tracing::{error, trace, warn, Level};
-use tracing_subscriber::FmtSubscriber;
-
-#[macro_use]
-extern crate rocket;
-use rocket::fairing::AdHoc;
-use rocket::http::hyper::header::{ContentDisposition, DispositionType};
-use rocket::http::{ContentType, Status};
-use rocket::response::content::Content;
-use rocket::{Data, Response, State};
-
-extern crate tree_magic;
-
-use std::convert::TryInto;
+use std::collections::HashMap;
+use std::path::PathBuf;
+use std::sync::Arc;
 use std::thread;
 use std::vec::Vec;
 
+use rocket::data::{Limits, ToByteUnit};
+use tracing::{error, trace, warn};
+
+use rocket::fairing::AdHoc;
+use rocket::form::{DataField, Form, FromFormField, ValueField};
+use rocket::http::hyper::header;
+use rocket::http::{ContentType, Header, Status};
+use rocket::response::content;
+use rocket::{delete, get, launch, post, routes, Data};
+use rocket::{Build, Response, State};
+
 use chrono::Utc;
 
+use syntect::highlighting::ThemeSet;
+use syntect::parsing::{SyntaxReference, SyntaxSet};
+use tera::Tera;
+use util::HostHeader;
+
+use tokio::io::AsyncReadExt;
+
+mod config;
 mod dict;
 mod file;
 mod id;
 mod util;
 
 use crate::util::find_syntax_by_name;
-use rocket::response::Body;
-use std::io::{Cursor, Read};
-use std::path::PathBuf;
-use syntect::highlighting::ThemeSet;
-use syntect::parsing::{SyntaxReference, SyntaxSet};
-use tera::Tera;
-use util::HostHeader;
+use id::PasteId;
 
 #[get("/gui")]
-fn gui(config: State<ConfigState>) -> Result<Response<'static>, Status> {
+fn gui(config: &State<ConfigState>) -> Result<content::Html<String>, Status> {
     let context = tera::Context::new();
     let rendered_template = config.tera.render("gui", &context).unwrap();
-    Ok(util::create_response_from_string(rendered_template, None))
+    Ok(content::Html(rendered_template))
 }
 
 #[get("/")]
-fn index<'a>(host: HostHeader, config: State<ConfigState>) -> Result<Response<'a>, Status> {
+fn index<'a>(
+    host: HostHeader,
+    config: &State<ConfigState>,
+) -> Result<content::Html<String>, Status> {
     let mut context = tera::Context::new();
     context.insert("url", host.0);
     let rendered_template = config.tera.render("index", &context).unwrap();
-    Ok(util::create_response_from_string(rendered_template, None))
+    Ok(content::Html(rendered_template))
 }
 
 #[get("/favicon.ico")]
-fn favicon() -> Content<&'static [u8]> {
-    Content(ContentType::Icon, FAVICON.into())
+fn favicon() -> content::Custom<&'static [u8]> {
+    content::Custom(ContentType::Icon, FAVICON.into())
 }
 
 #[get("/static/<path..>")]
-fn static_file(path: PathBuf) -> Option<Response<'static>> {
+fn static_file(path: PathBuf) -> Option<content::Custom<String>> {
     let mut res = Response::new();
     res.set_status(Status::Ok);
 
     match path.to_str() {
-        Some("styles/main.css") => Some(util::create_response_from_string(
-            MAIN_CSS.into(),
-            ContentType::CSS.into(),
-        )),
+        Some("styles/main.css") => Some(content::Custom(ContentType::CSS.into(), MAIN_CSS.into())),
         _ => None,
     }
 }
 
+#[derive(rocket::Responder)]
+enum PasteResponse {
+    File(PasteFileResponse),
+    Html(content::Html<String>),
+}
+
+struct PasteFileResponse {
+    paste: Paste,
+    file: tokio::fs::File,
+}
+
+impl PasteFileResponse {
+    fn new(paste: Paste, file: tokio::fs::File) -> Self {
+        Self { paste, file }
+    }
+}
+
+impl<'r, 'o: 'r> rocket::response::Responder<'r, 'o> for PasteFileResponse {
+    fn respond_to(self, _request: &'r rocket::Request<'_>) -> rocket::response::Result<'o> {
+        let mut response = Response::build()
+            .status(Status::Ok)
+            .header(Header::new(header::CONTENT_DISPOSITION.as_str(), "inline"))
+            .streamed_body(self.file)
+            .finalize();
+
+        if self.paste.mime.contains("text/")
+            || self.paste.mime.contains("application/xhtml")
+            || self.paste.mime.contains("application/xml")
+        {
+            response.set_header(ContentType::parse_flexible("text/plain; charset=utf-8").unwrap());
+        } else {
+            response.set_header(ContentType::parse_flexible(&self.paste.mime).unwrap());
+        }
+
+        Ok(response)
+    }
+}
+
 #[get("/<paste_id>?<lang>")]
-fn retrieve(
+async fn retrieve(
     paste_id: PasteId,
     lang: Option<String>,
-    config: State<ConfigState>,
-) -> Result<Response, Status> {
+    config: &State<ConfigState>,
+) -> Result<PasteResponse, Status> {
     let paste = file::get_db(&paste_id.id, &config.db)?;
     let now = Utc::now().timestamp();
 
@@ -83,20 +123,14 @@ fn retrieve(
         return Err(Status::Gone);
     }
 
-    let mut file = file::get(file::build_path(&paste_id.id, &config))?;
-
-    let mut res = Response::new();
-    res.set_status(Status::Ok);
-    res.set_header(ContentDisposition {
-        disposition: DispositionType::Inline,
-        parameters: vec![],
-    });
+    let mut file = file::get(file::build_path(&paste_id.id, &config)).await?;
 
     match lang {
         Some(l) if !l.is_empty() => {
             let mut buffer = String::new();
             // Could a better error be returned?
             file.read_to_string(&mut buffer)
+                .await
                 .map_err(|_| Status::InternalServerError)?;
 
             // 1. Try to find syntax by exact match
@@ -133,23 +167,9 @@ fn retrieve(
             context.insert("content", &html);
             let rendered_template = config.tera.render("retrieve", &context).unwrap();
 
-            res.set_header(ContentType::HTML);
-            let size = rendered_template.len() as u64;
-            let body = Body::Sized(Cursor::new(rendered_template), size);
-            res.set_raw_body(body);
-            Ok(res)
+            Ok(PasteResponse::Html(content::Html(rendered_template)))
         }
-        None | _ => {
-            if paste.mime.contains("text/")
-                || paste.mime.contains("application/xhtml")
-                || paste.mime.contains("application/xml")
-            {
-                res.set_header(ContentType::parse_flexible("text/plain; charset=utf-8").unwrap());
-            }
-
-            res.set_streamed_body(file);
-            Ok(res)
-        }
+        None | _ => Ok(PasteResponse::File(PasteFileResponse::new(paste, file))),
     }
 }
 
@@ -158,15 +178,15 @@ fn delete_get<'a>(
     id: PasteId,
     token: PasteId,
     host: HostHeader,
-    config: State<ConfigState>,
-) -> Result<Response<'a>, Status> {
+    config: &State<ConfigState>,
+) -> Result<content::Html<String>, Status> {
     match delete(&id.id, token, &config) {
         Ok(_) => {
             let mut context = tera::Context::new();
             context.insert("id", &format!("{}", &id.id));
             context.insert("host", &host.0);
             let rendered_template = config.tera.render("delete_result", &context).unwrap();
-            Ok(util::create_response_from_string(rendered_template, None))
+            Ok(content::Html(rendered_template))
         }
         Err(e) => Err(e),
     }
@@ -176,9 +196,9 @@ fn delete_get<'a>(
 fn delete_delete(
     id: PasteId,
     token: PasteId,
-    config: State<ConfigState>,
+    config: &State<ConfigState>,
 ) -> Result<Status, Status> {
-    delete(&id.id, token, &config)
+    delete(&id.id, token, config)
 }
 
 fn delete(id: &str, token: PasteId, config: &State<ConfigState>) -> Result<Status, Status> {
@@ -193,28 +213,46 @@ fn delete(id: &str, token: PasteId, config: &State<ConfigState>) -> Result<Statu
     return Ok(Status::Ok);
 }
 
-#[derive(Responder)]
-pub enum CreateReturnType<'a> {
+#[derive(rocket::Responder)]
+pub enum CreateReturnType {
     Raw(String),
-    Response(Response<'a>),
+    Response(content::Html<String>),
 }
 
-#[post("/?<token>&<from_gui>", data = "<data>")]
-pub fn create<'a>(
-    cont_type: &ContentType,
-    data: Data,
-    token: Option<String>,
-    from_gui: bool,
-    config: State<crate::ConfigState>,
-    host: HostHeader,
-) -> Result<CreateReturnType<'a>, Status> {
-    if !cont_type.is_form_data() {
-        return Err(Status::MethodNotAllowed);
+pub enum Bytes<'v> {
+    Value(String),
+    Data(Data<'v>),
+}
+
+#[async_trait::async_trait]
+impl<'v> FromFormField<'v> for Bytes<'v> {
+    fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
+        Ok(Bytes::Value(field.value.to_owned()))
     }
 
-    let pastes = file::store(cont_type, data, &config)?;
+    async fn from_data(field: rocket::form::DataField<'v, '_>) -> rocket::form::Result<'v, Self> {
+        Ok(Bytes::Data(field.data))
+    }
+
+    fn default() -> Option<Self> {
+        None
+    }
+}
+
+#[post("/?<_token>&<from_gui>", data = "<data>")]
+#[tracing::instrument(skip_all)]
+pub async fn create<'a>(
+    data: Form<Vec<Bytes<'a>>>,
+    _token: Option<String>,
+    from_gui: bool,
+    config: &State<crate::ConfigState>,
+    host: HostHeader<'_>,
+) -> Result<CreateReturnType, Status> {
+    trace!("creating paste");
+    let pastes = file::store(data, config).await?;
 
     if from_gui {
+        trace!("created from gui");
         let mut context = tera::Context::new();
 
         // The gui is only able to create one upload at a time
@@ -230,8 +268,7 @@ pub fn create<'a>(
         context.insert("host", &host.0);
         let rendered_template = config.tera.render("gui_result", &context).unwrap();
 
-        let res = util::create_response_from_string(rendered_template, None);
-        Ok(CreateReturnType::Response(res))
+        Ok(CreateReturnType::Response(content::Html(rendered_template)))
     } else {
         let mut urls = Vec::new();
         for paste in &pastes {
@@ -249,14 +286,6 @@ pub fn create<'a>(
     }
 }
 
-pub struct ConfigState {
-    storage_dir: String,
-    db: sled::Db,
-    tera: Tera,
-    syntax_set: SyntaxSet,
-    theme_set: ThemeSet,
-}
-
 #[macro_use]
 extern crate serde_derive;
 extern crate bincode;
@@ -272,11 +301,11 @@ pub struct Paste {
 
 impl Paste {
     #[tracing::instrument]
-    pub fn from_file(
+    pub async fn from_file(
         mut id: PasteId,
-        file: &mut std::fs::File,
+        file: &mut tokio::fs::File,
     ) -> Result<Paste, rocket::http::Status> {
-        let size = file.metadata().unwrap().len();
+        let size = file.metadata().await.unwrap().len();
         if size == 0 {
             return Err(Status::BadRequest);
         }
@@ -286,10 +315,13 @@ impl Paste {
         let token = PasteId::new();
 
         let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
-        file.take(2048).read_to_end(&mut mime_bytes).map_err(|e| {
-            error!("failed to read file: {:?}", e);
-            Status::InternalServerError
-        })?;
+        file.take(2048)
+            .read_to_end(&mut mime_bytes)
+            .await
+            .map_err(|e| {
+                error!("failed to read file: {:?}", e);
+                Status::InternalServerError
+            })?;
 
         trace!("read bytes for mime parsing: {:x?}", mime_bytes);
 
@@ -310,20 +342,29 @@ impl Paste {
     }
 }
 
-const BASE_TEMPLATE: &str = include_str!("../templates/base.html.tera");
-const INDEX_TEMPLATE: &str = include_str!("../templates/index.html.tera");
-const RETRIEVE_TEMPLATE: &str = include_str!("../templates/retrieve.html.tera");
-const GUI_TEMPLATE: &str = include_str!("../templates/gui.html.tera");
-const GUI_RESULT_TEMPLATE: &str = include_str!("../templates/gui_result.html.tera");
-const DELETE_RESULT_TEMPLATE: &str = include_str!("../templates/delete_result.html.tera");
-
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 const FAVICON: &[u8] = include_bytes!("../static/favicon.ico");
 
-fn rocket() -> rocket::Rocket {
+pub struct ConfigState {
+    db: Arc<sled::Db>,
+    tera: Tera,
+    syntax_set: SyntaxSet,
+    theme_set: ThemeSet,
+    app_config: config::AppConfig,
+}
+
+#[launch]
+fn rocket() -> rocket::Rocket<Build> {
     tracing_subscriber::fmt::init();
 
-    rocket::ignite()
+    let figment = rocket::Config::figment().merge((
+        "limits",
+        Limits::new()
+            .limit("forms", 10.gigabytes())
+            .limit("data-form", 10.gigabytes()),
+    ));
+
+    rocket::custom(figment)
         .mount(
             "/",
             routes![
@@ -337,83 +378,29 @@ fn rocket() -> rocket::Rocket {
                 favicon
             ],
         )
-        .attach(AdHoc::on_attach("Set Config", |rocket| {
-            println!("{:?}", rocket.config().limits);
-            println!("Adding config to managed state...");
+        .attach(AdHoc::on_ignite("Set Config", |rocket| {
+            Box::pin(async {
+                println!("Adding config to managed state...");
 
-            let storage_dir = rocket
-                .config()
-                .get_string("storage_dir")
-                .unwrap_or("/storage".to_string());
-            let database_dir = rocket
-                .config()
-                .get_string("database_dir")
-                .unwrap_or("/storage/db".to_string());
+                let config = config::AppConfig::new(rocket.figment());
 
-            let db = sled::open(database_dir).unwrap();
+                let db = Arc::new(sled::open(&config.database_dir).unwrap());
 
-            let mut tera = match rocket.config().get_string("template_dir") {
-                Ok(s) => {
-                    let mut tera = Tera::parse(&format!("{}/*", s)).unwrap();
-                    println!("Using external templates at {}", s);
-                    tera.add_template_files(vec![
-                        (format!("{}/base.html.tera", s), Some("base")),
-                        (format!("{}/index.html.tera", s), Some("index")),
-                        (format!("{}/retrieve.html.tera", s), Some("retrieve")),
-                        (format!("{}/gui.html.tera", s), Some("gui")),
-                        (format!("{}/gui_result.html.tera", s), Some("gui_result")),
-                        (
-                            format!("{}/delete_result_result.html.tera", s),
-                            Some("delete_result"),
-                        ),
-                    ])
-                    .unwrap();
-                    tera
-                }
-                _ => {
-                    let mut tera = Tera::parse("/templates/*").unwrap();
-                    println!("Using embedded templates");
-                    tera.add_raw_templates(vec![
-                        ("base", BASE_TEMPLATE),
-                        ("index", INDEX_TEMPLATE),
-                        ("retrieve", RETRIEVE_TEMPLATE),
-                        ("gui", GUI_TEMPLATE),
-                        ("gui_result", GUI_RESULT_TEMPLATE),
-                        ("delete_result", DELETE_RESULT_TEMPLATE),
-                    ])
-                    .unwrap();
-                    tera
-                }
-            };
+                let tera = config::setup_templates(&config).await;
 
-            tera.build_inheritance_chains().unwrap();
+                let db_cloned = db.clone();
+                let config_cloned = config.clone();
+                thread::spawn(move || file::cleanup_routine(db_cloned, config_cloned));
 
-            let deletion_interval_ms = rocket
-                .config()
-                .get_int("deletion_interval_ms")
-                .unwrap_or(3_600_000);
-            let storage_dir_cloned = storage_dir.clone();
-            let db_cloned = db.clone();
-            thread::spawn(move || {
-                file::cleanup_routine(
-                    &storage_dir_cloned,
-                    &db_cloned,
-                    deletion_interval_ms.try_into().unwrap(),
-                )
-            });
-
-            Ok(rocket.manage(ConfigState {
-                storage_dir,
-                db,
-                tera,
-                syntax_set: SyntaxSet::load_defaults_newlines(),
-                theme_set: ThemeSet::load_defaults(),
-            }))
+                rocket.manage(ConfigState {
+                    db,
+                    tera,
+                    syntax_set: SyntaxSet::load_defaults_newlines(),
+                    theme_set: ThemeSet::load_defaults(),
+                    app_config: config,
+                })
+            })
         }))
-}
-
-fn main() {
-    rocket().launch();
 }
 
 #[cfg(test)]
