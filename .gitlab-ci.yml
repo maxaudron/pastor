@@ -5,6 +5,9 @@ include:
   - project: "cocainefarm/templates/ci"
     file: "/tanka.base.yaml"
 
+variables:
+  RUST_RELEASE: "true"
+
 build:container:tags:
   needs:
     - job: test
