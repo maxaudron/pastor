@@ -3,3 +3,10 @@ include:
     file: "/rust.yaml"
   - project: "cocainefarm/templates/ci"
     file: "/tanka.base.yaml"
+
+build:container:tags:
+  needs:
+    - job: test
+      optional: true
+    - job: coverage
+      optional: true
