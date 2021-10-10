@@ -1,3 +1,4 @@
+---
 include:
   - project: "cocainefarm/templates/ci"
     file: "/rust.yaml"
