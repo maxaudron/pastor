@@ -10,7 +10,7 @@ variables:
 
 build:container:tags:
   needs:
-    - job: test
+    - job: rust test
       optional: true
-    - job: coverage
+    - job: rust coverage
       optional: true
