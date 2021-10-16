@@ -11,6 +11,7 @@ use rocket::http::Status;
 use rocket::State;
 
 use tokio::io::{AsyncSeekExt, AsyncWriteExt};
+use tracing::debug;
 use tracing::{error, trace};
 
 use crate::id::PasteId;
@@ -81,39 +82,30 @@ use crate::Paste;
 
 #[tracing::instrument(skip(data, config))]
 pub async fn store<'a>(
-    data: Form<Vec<crate::Bytes<'a>>>,
+    data: crate::multipart::Form<'a>,
     config: &State<crate::ConfigState>,
 ) -> Result<Vec<Paste>, Status> {
     let mut pastes = Vec::new();
 
-    for paste in data.into_inner() {
+    for mut paste in data.into_inner() {
         trace!("storing file");
         let (mut file, id) = create_file(&config).await.unwrap();
 
-        match paste {
-            crate::Bytes::Value(v) => {
-                file.write_all(v.as_bytes()).await.map_err(|_| {
-                    error!("failed to save file to disk");
-                    Status::InternalServerError
-                })?;
-            }
-            crate::Bytes::Data(v) => {
-                // TODO check if write complete and do something with that?
-                let mut stream = v.open(10.gigabytes());
+        debug!("got paste as Data");
+        // TODO check if write complete and do something with that?
+        // let mut stream = v.open(10.gigabytes());
 
-                tokio::io::copy(&mut stream, &mut file).await.map_err(|err| {
-                    error!("failed to stream file to disk: {:?}", err);
-                    Status::InternalServerError
-                })?;
-
-                // .stream_to(&mut file)
-                // .await
-                // .map_err(|_| {
-                //     error!("failed to stream file to disk");
-                //     Status::InternalServerError
-                // })?;
-            }
-        };
+        // Process the field data chunks e.g. store them in a file.
+        while let Some(chunk) = paste
+            .chunk()
+            .await
+            .map_err(|_| Status::InternalServerError)?
+        {
+            file.write_all(&chunk).await.map_err(|err| {
+                error!("failed to stream file to disk: {:?}", err);
+                Status::InternalServerError
+            })?;
+        }
 
         // Go back to beginning of file for us to be able to read it again
         file.seek(std::io::SeekFrom::Start(0)).await.map_err(|e| {

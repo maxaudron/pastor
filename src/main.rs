@@ -33,6 +33,8 @@ mod file;
 mod id;
 mod util;
 
+mod multipart;
+
 use crate::util::find_syntax_by_name;
 use id::PasteId;
 
@@ -241,7 +243,7 @@ impl<'v> FromFormField<'v> for Bytes<'v> {
 #[post("/?<_token>&<from_gui>", data = "<data>")]
 #[tracing::instrument(skip_all)]
 pub async fn create<'a>(
-    data: Form<Vec<Bytes<'a>>>,
+    data: multipart::Form<'a>,
     _token: Option<String>,
     from_gui: bool,
     config: &State<crate::ConfigState>,
