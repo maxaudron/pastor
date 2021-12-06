@@ -9,6 +9,21 @@ variables:
   RUST_RELEASE: "true"
   RUST_RELEASE_CRATESIO: "true"
 
+.rust_prebuild:
+  before_script:
+    - wget http://ftp.astron.com/pub/file/file-5.41.tar.gz && tar xf file-5.41.tar.gz
+    - cd file-5.41
+    - apk add autoconf libtool automake make && SH_LIBTOOL='/usr/share/build-1/libtool' autoreconf -f -i && ./configure --prefix=/usr --datadir=/usr/share --enable-static --disable-shared && make -j32 && make install && cd .. && rm -rf /work/file-5.41
+
+rust test:
+  extends: .rust_prebuild
+
+rust coverage:
+  extends: .rust_prebuild
+
+rust build:
+  extends: .rust_prebuild
+
 build:container:tags:
   needs:
     - job: rust test

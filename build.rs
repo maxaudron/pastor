@@ -10,12 +10,11 @@ fn main() -> Result<(), Box<grass::Error>> {
         }
     }
 
-    // Unfortunately this does not work and always runs this script, even if no files changed inside,
-    // even though it should:
-    // https://doc.rust-lang.org/cargo/reference/build-scripts.html#cargorerun-if-changedpath
-    // Since apparently it only looks at the directory mtime:
-    // https://github.com/rust-lang/cargo/issues/2599#issuecomment-213020236
-    // println!("cargo:rerun-if-changed=static/styles");
+    #[cfg(feature = "magic_static")]
+    println!("cargo:rustc-link-lib=static=magic");
+
+    #[cfg(feature = "magic_static")]
+    println!("cargo:rustc-env=PASTOR_MIME_DB=/usr/share/misc/magic.mgc");
 
     Ok(())
 }
@@ -29,7 +28,7 @@ fn generate_css(scss_path: &str) -> Result<(), Box<grass::Error>> {
     // This instructs cargo to rerun this build script if this input file has changed.
     // Since the directory method above does not work, this also means if a new file is added,
     // a change in an existing file must be made for cargo to start tracking the new file.
-    println!("cargo:rerun-if-changed={}", scss_path);
+    // println!("cargo:rerun-if-changed={}", scss_path);
 
     Ok(())
 }

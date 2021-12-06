@@ -7,11 +7,12 @@ use std::sync::Arc;
 use std::thread;
 use std::vec::Vec;
 
+use magic::{Cookie, CookieFlags};
 use rocket::data::{Limits, ToByteUnit};
 use tracing::{error, trace, warn};
 
 use rocket::fairing::AdHoc;
-use rocket::form::{Form, FromFormField};
+use rocket::form::FromFormField;
 use rocket::http::hyper::header;
 use rocket::http::{ContentType, Header, Status};
 use rocket::response::content;
@@ -326,7 +327,13 @@ impl Paste {
 
         trace!("read bytes for mime parsing: {:x?}", mime_bytes);
 
-        let mime = tree_magic::from_u8(&mime_bytes).to_string();
+        let mime = MAGIC.with(|magic| {
+            magic.buffer(&mime_bytes).map_err(|err| {
+                error!("failed to parse mime type: {}", err);
+                rocket::http::Status::InternalServerError
+            })
+        })?;
+
         let ext = util::ext_from_mime(&mime);
 
         trace!("got file ext: {:?}", ext);
@@ -343,6 +350,32 @@ impl Paste {
     }
 }
 
+thread_local! {
+    static MAGIC: Cookie = {
+        let magic = Cookie::open(CookieFlags::default() | CookieFlags::MIME_TYPE).unwrap();
+
+        #[cfg(feature = "magic_static")]
+        magic
+            .load_buffers(&[MIME_DB])
+            .expect("failed to load magic database");
+
+        #[cfg(not(feature = "magic_static"))]
+        magic
+            .load(
+                &std::fs::read_dir(
+                    std::env::var("PASTOR_MIME_DB").unwrap_or("/usr/share/misc/magic".to_string()),
+                )
+                .unwrap()
+                .filter_map(|entry| entry.ok())
+                .map(|entry| entry.path().to_str().unwrap().to_string())
+                .collect::<Vec<String>>(),
+            )
+            .expect("failed to load magic database");
+
+        magic
+    };
+}
+
 const MAIN_CSS: &str = include_str!("../static/styles/main.css");
 const FAVICON: &[u8] = include_bytes!("../static/favicon.ico");
 
@@ -353,6 +386,9 @@ pub struct ConfigState {
     theme_set: ThemeSet,
     app_config: config::AppConfig,
 }
+
+#[cfg(feature = "magic_static")]
+const MIME_DB: &[u8] = include_bytes!(env!("PASTOR_MIME_DB"));
 
 #[launch]
 fn rocket() -> rocket::Rocket<Build> {

@@ -1,7 +1,11 @@
-use anyhow::{Result, Context};
+use anyhow::Result;
 use async_trait::async_trait;
 use multer::{Field, Multipart};
-use rocket::{Data, Request, data::{FromData, Limits, Outcome}, form::Errors, http::Status};
+use rocket::{
+    data::{FromData, Limits, Outcome},
+    http::Status,
+    Data, Request,
+};
 use tracing::debug;
 
 pub struct Form<'v>(Vec<Field<'v>>);
@@ -36,14 +40,13 @@ impl<'r> Form<'r> {
     }
 
     async fn from_multipart(req: &'r Request<'_>, data: Data<'r>) -> Result<Multipart<'r>> {
-        let boundary = req.content_type()
+        let boundary = req
+            .content_type()
             .ok_or(multer::Error::NoMultipart)?
             .param("boundary")
             .ok_or(multer::Error::NoBoundary)?;
 
-        let form_limit = req.limits()
-            .get("data-form")
-            .unwrap_or(Limits::DATA_FORM);
+        let form_limit = req.limits().get("data-form").unwrap_or(Limits::DATA_FORM);
 
         Ok(Multipart::with_reader(data.open(form_limit), boundary))
     }

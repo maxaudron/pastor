@@ -2,7 +2,19 @@
 # Cargo Build Stage
 # ------------------------------------------------------------------------------
 
-FROM kube.cat/cocainefarm/rust:1.55.0 AS chef
+FROM kube.cat/cocainefarm/rust:1.57.0 AS chef
+
+WORKDIR /work
+RUN wget http://ftp.astron.com/pub/file/file-5.41.tar.gz && \
+    tar xf file-5.41.tar.gz
+
+WORKDIR /work/file-5.41
+
+RUN apk add autoconf libtool automake make && \
+    SH_LIBTOOL='/usr/share/build-1/libtool' autoreconf -f -i && \
+    ./configure --prefix=/usr --datadir=/usr/share --enable-static --disable-shared && \
+    make -j32 && make install && cd .. && rm -rf /work/file-5.41
+
 WORKDIR /work
 
 FROM chef AS planner
