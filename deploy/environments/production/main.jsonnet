@@ -1,8 +1,8 @@
 local util = import 'util/main.libsonnet';
 local k = import 'ksonnet-util/kausal.libsonnet';
 
-function(tag, namespace, envSlug=null, projectPathSlug=null)
-  (util.inlineSpec('https://control.kube.cat:6443', namespace, envSlug, projectPathSlug))
+function(tag, namespace, envSlug=null, projectPathSlug=null, apiserver='https://kube.vapor.systems:6443')
+  (util.inlineSpec(apiserver, namespace, envSlug, projectPathSlug))
   + {
     _config:: self.data._config,
     pastor:: self.data.pastor,
