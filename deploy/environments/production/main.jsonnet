@@ -20,6 +20,7 @@ function(tag, namespace, envSlug=null, projectPathSlug=null, apiserver='https://
           k.apps.v1.statefulSet.spec.template.metadata.withAnnotationsMixin(
             $.spec.resourceDefaults.annotations),
         ingress: util.ingressFor(super.service, "c-v.sh", "c-v-sh-tls")
+          + k.networking.v1.ingress.spec.withIngressClassName('cdn')
           + k.networking.v1.ingress.metadata.withAnnotationsMixin({
                 "kubernetes.io/tls-acme": "true",
                 "nginx.ingress.kubernetes.io/proxy-body-size": "4G"
