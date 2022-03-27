@@ -24,6 +24,10 @@ rust coverage:
 rust build:
   extends: .rust_prebuild
 
+rust publish crates.io:
+  script:
+    - cargo publish --token="$RUST_CRATESIO_TOKEN" --no-default-features
+
 build:container:tags:
   needs:
     - job: rust test
