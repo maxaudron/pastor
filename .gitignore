@@ -2,3 +2,5 @@
 /storage
 /test-data
 /deploy/vendor
+/.direnv
+/result

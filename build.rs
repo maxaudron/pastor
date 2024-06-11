@@ -13,8 +13,8 @@ fn main() -> Result<(), Box<grass::Error>> {
     #[cfg(feature = "magic_static")]
     println!("cargo:rustc-link-lib=static=magic");
 
-    #[cfg(feature = "magic_static")]
-    println!("cargo:rustc-env=PASTOR_MIME_DB=/usr/share/misc/magic.mgc");
+    //#[cfg(feature = "magic_static")]
+    //println!("cargo:rustc-env=PASTOR_MIME_DB=/usr/share/misc/magic.mgc");
 
     Ok(())
 }

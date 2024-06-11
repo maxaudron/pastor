@@ -50,7 +50,7 @@ grass = "0.10"
 glob = "0.3"
 
 [features]
-default = ["magic_static"]
+default = []
 
 magic_static = []
 
