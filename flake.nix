@@ -35,7 +35,7 @@
             crates."pastor" =
               let
                 mkDerivation = {
-                  nativeBuildInputs = [ pkgs.pkgsStatic.file.dev pkgs.file.dev ];
+                  nativeBuildInputs = [ pkgs.file.dev ];
                 };
                 env = {
                   PASTOR_MIME_DB = "${pkgs.file}/share/misc/magic.mgc";
