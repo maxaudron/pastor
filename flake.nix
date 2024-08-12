@@ -1,6 +1,6 @@
 {
   inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-24.05";
     nci.url = "github:yusdacra/nix-cargo-integration";
     nci.inputs.nixpkgs.follows = "nixpkgs";
     parts.url = "github:hercules-ci/flake-parts";
@@ -9,7 +9,7 @@
 
   outputs =
     inputs@{ parts, nci, ... }:
-    parts.lib.mkFlake { inherit inputs; } {
+    parts.lib.mkFlake { inherit inputs; } ({ moduleWithSystem, ... }: {
       systems = [
         "x86_64-linux"
         "x86_64-darwin"
@@ -17,6 +17,18 @@
         "aarch64-darwin"
       ];
       imports = [ nci.flakeModule ];
+
+      flake = {
+        nixosModules.default = moduleWithSystem (
+          perSystem@{ config }:
+          nixos@{ ... }:
+          {
+            services.pastor.package = perSystem.config.packages.default;
+            imports = [ ./nix/nixos-module.nix ];
+          }
+        );
+      };
+
       perSystem =
         {
           pkgs,
@@ -42,6 +54,12 @@
                 };
               in
               {
+                runtimeLibs = [ pkgs.file ];
+
+                profiles = {
+                  release.runTests = false;
+                };
+
                 drvConfig = {
                   inherit mkDerivation env;
                 };
@@ -53,15 +71,14 @@
             toolchainConfig = {
               channel = "stable";
               targets = [ "x86_64-unknown-linux-musl" ];
-              components = [
-                "rustfmt"
-                "rust-src"
-              ];
+              components = [ "rustfmt" "rust-src" ];
             };
           };
 
-          devShells.default = crateOutputs.devShell;
+          devShells.default = crateOutputs.devShell.overrideAttrs (prev: {
+            PASTOR_MIME_DB = "${pkgs.file}/share/misc/magic.mgc";
+          });
           packages.default = crateOutputs.packages.release;
         };
-    };
+    });
 }
