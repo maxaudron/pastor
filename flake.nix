@@ -50,7 +50,7 @@
                   nativeBuildInputs = [ pkgs.file.dev ];
                 };
                 env = {
-                  PASTOR_MIME_DB = "${pkgs.file}/share/misc/magic.mgc";
+                  PASTOR_MIME_DB = "${pkgs.file}/share/misc/";
                 };
               in
               {
@@ -76,7 +76,7 @@
           };
 
           devShells.default = crateOutputs.devShell.overrideAttrs (prev: {
-            PASTOR_MIME_DB = "${pkgs.file}/share/misc/magic.mgc";
+            PASTOR_MIME_DB = "${pkgs.file}/share/misc/";
           });
           packages.default = crateOutputs.packages.release;
         };
