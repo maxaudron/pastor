@@ -33,26 +33,24 @@ with lib;
         example = "debug";
       };
 
+      address = mkOption {
+        default = "127.0.0.1";
+        type = types.str;
+      };
+
+      port = mkOption {
+        default = 6881;
+        type = types.int;
+      };
+
+      storage_dir = mkOption {
+        default = "/var/lib/pastor";
+        type = types.path;
+      };
+
       settings = mkOption {
         type = types.submodule {
           freeformType = toml.type;
-
-          options = {
-            address = mkOption {
-              default = "127.0.0.1";
-              type = types.string;
-            };
-
-            port = mkOption {
-              default = 6881;
-              type = types.int;
-            };
-
-            storage_dir = mkOption {
-              default = "/var/lib/pastor";
-              type = types.path;
-            };
-          };
         };
       };
     };
@@ -61,10 +59,11 @@ with lib;
   config = {
     services.pastor.settings = {
       default = {
-        address = cfg.settings.address;
-        port = cfg.settings.port;
-        limits = { forms = "10 GB"; data-form = "10 GB"; };
-        storage_dir = cfg.settings.storage_dir;
+        address = cfg.address;
+        port = cfg.port;
+        storage_dir = cfg.storage_dir;
+
+        limits = { forms = lib.mkDefault "10 GB"; data-form = lib.mkDefault "10 GB"; };
       };
     };
 
