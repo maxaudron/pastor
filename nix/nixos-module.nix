@@ -76,7 +76,7 @@ with lib;
       serviceConfig = {
         ExecStart = "${cfg.package}/bin/pastor";
 
-        StateDirectory = cfg.settings.storage_dir;
+        StateDirectory = cfg.storage_dir;
         DynamicUser = lib.mkDefault true;
         ProtectHome = true;
         NoNewPrivileges = true;
