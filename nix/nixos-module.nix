@@ -45,7 +45,7 @@ with lib;
 
             port = mkOption {
               default = 6881;
-              type = types.string;
+              type = types.int;
             };
 
             storage_dir = mkOption {
