@@ -85,6 +85,7 @@ with lib;
       environment = {
         RUST_LOG = lib.mkDefault "pastor=${cfg.logLevel}";
         ROCKET_CONFIG = configFile;
+        PASTOR_MIME_DB = "${pkgs.file}/share/misc/magic.mgc";
       } // cfg.extraEnvironment;
     };
   };
