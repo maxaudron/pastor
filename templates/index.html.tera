@@ -23,11 +23,9 @@ Files
 
   Upload files:
   -----------------------------------------------------------------------------------
-  $ curl -F a=@vim.png b=@vim2.png https://{{ url }}/
-  https://{{ url }}/picturedsalters aloofgremlins
+  $ curl -F a=@vim.png b=@vim2.png https://{{ url }}/?token=<secret token>
+  https://{{ url }}/picturedsalters
   -----------------------------------------------------------------------------------
-  The second string is a token needed to authenticate for
-  modifying or deleteing your uploads.
 
  Retrieve
 
@@ -46,9 +44,9 @@ Files
 
   Delete file:
   -----------------------------------------------------------------------------------
-  $ curl -X DELETE https://{{ url }}/picturedsalters?token=aloofgremlins
+  $ curl -X DELETE https://{{ url }}/picturedsalters?token=<secret token>
   or
-  GET https://{{ url }}/delete/picturedsalters?token=aloofgremlins
+  GET https://{{ url }}/delete/picturedsalters?token=<secret token>
   -----------------------------------------------------------------------------------
 
 Expiry
@@ -82,6 +80,11 @@ Expiry
       |                                         ............................
     0 +------------|-------------|------------|-------------|------------|-+
       0           100           200          300           400          500 MiB
+
+TOKEN
+=====
+
+You can request your very own secret token from audron.
 
 GUI
 =====
