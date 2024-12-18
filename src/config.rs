@@ -14,6 +14,9 @@ pub struct AppConfig {
     pub database_dir: String,
     pub template_dir: Option<String>,
     pub deletion_interval_ms: u64,
+
+    /// File for storing upload access tokens
+    pub token_file: String,
 }
 
 impl AppConfig {
@@ -27,6 +30,10 @@ impl AppConfig {
         let database_dir = src
             .find_value("database_dir")
             .map_or(format!("{}/db", storage_dir), |x| x.into_string().unwrap());
+
+        let token_file = src
+            .find_value("database_dir")
+            .map_or(format!("{}/tokens.toml", database_dir), |x| x.into_string().unwrap());
 
         let template_dir = src
             .find_value("database_dir")
@@ -43,6 +50,7 @@ impl AppConfig {
             database_dir,
             template_dir,
             deletion_interval_ms,
+            token_file,
         }
     }
 }

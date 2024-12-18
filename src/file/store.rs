@@ -82,6 +82,7 @@ use crate::Paste;
 pub async fn store<'a>(
     data: crate::multipart::Form<'a>,
     config: &State<crate::ConfigState>,
+    token: Option<String>
 ) -> Result<Vec<Paste>, Status> {
     let mut pastes = Vec::new();
 
@@ -111,7 +112,7 @@ pub async fn store<'a>(
             Status::InternalServerError
         })?;
 
-        let paste = Paste::from_file(id, &mut file).await?;
+        let paste = Paste::from_file(id, &mut file, token.clone()).await?;
         trace!("paste: {:?}", paste);
         store_db(&config.db, &paste);
 

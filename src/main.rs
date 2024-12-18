@@ -241,17 +241,21 @@ impl<'v> FromFormField<'v> for Bytes<'v> {
     }
 }
 
-#[post("/?<_token>&<from_gui>", data = "<data>")]
+#[post("/?<token>&<from_gui>", data = "<data>")]
 #[tracing::instrument(skip_all)]
 pub async fn create<'a>(
     data: multipart::Form<'a>,
-    _token: Option<String>,
+    token: String,
     from_gui: bool,
     config: &State<crate::ConfigState>,
     host: HostHeader<'_>,
 ) -> Result<CreateReturnType, Status> {
+    if !config.tokens.contains(&token).await {
+        return Err(Status::Forbidden);
+    }
+
     trace!("creating paste");
-    let pastes = file::store(data, config).await?;
+    let pastes = file::store(data, config, Some(token)).await?;
 
     if from_gui {
         trace!("created from gui");
@@ -266,7 +270,6 @@ pub async fn create<'a>(
 
         context.insert("id", &format!("{}", &pastes[0].id));
         context.insert("mime", &format!("{}", &pastes[0].mime));
-        context.insert("token", &format!("{}", &pastes[0].token));
         context.insert("host", &host.0);
         let rendered_template = config.tera.render("gui_result", &context).unwrap();
 
@@ -276,10 +279,9 @@ pub async fn create<'a>(
         for paste in &pastes {
             trace!("paste: {:?}", paste);
             urls.push(format!(
-                "https://{host}/{id} {token}\n",
+                "https://{host}/{id}\n",
                 host = host.0,
                 id = paste.id,
-                token = paste.token
             ));
             trace!("urls: {:?}", urls);
         }
@@ -306,6 +308,7 @@ impl Paste {
     pub async fn from_file(
         mut id: PasteId,
         file: &mut tokio::fs::File,
+        token: Option<String>
     ) -> Result<Paste, rocket::http::Status> {
         let size = file.metadata().await.unwrap().len();
         if size == 0 {
@@ -314,7 +317,11 @@ impl Paste {
         let now = Utc::now().timestamp();
         let expiry = now + crate::util::expires(size);
 
-        let token = PasteId::new();
+        let token = if let Some(token) = token {
+            token.as_str().into()
+        } else {
+            PasteId::new()
+        };
 
         let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
         file.take(2048)
@@ -385,6 +392,58 @@ pub struct ConfigState {
     syntax_set: SyntaxSet,
     theme_set: ThemeSet,
     app_config: config::AppConfig,
+
+    tokens: Tokens,
+}
+
+#[derive(Clone)]
+pub struct Tokens(Arc<tokio::sync::RwLock<Vec<String>>>);
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+struct TomlTokens {
+    tokens: Vec<String>
+}
+
+impl Tokens {
+    pub fn new() -> Self {
+        Tokens(Arc::new(tokio::sync::RwLock::new(Vec::new())))
+    }
+
+    pub async fn contains(&self, token: &String) -> bool {
+        self.0.read().await.contains(token)
+    }
+
+    pub async fn read(&mut self, path: &str) {
+        let file =  tokio::fs::read_to_string(path).await.unwrap();
+        let value: TomlTokens = toml::from_str(&file).unwrap();
+        let mut s = self.0.write().await;
+        s.clear();
+        s.extend_from_slice(&value.tokens);
+    }
+
+    pub async fn refresh(mut tokens: Self, path: String) {
+        use inotify::{Inotify, WatchMask};
+        use rocket::futures::StreamExt;
+
+        let inotify = Inotify::init()
+            .expect("Error while initializing inotify instance");
+
+        // Watch for modify and close events.
+        inotify
+            .watches()
+            .add(&path, WatchMask::MODIFY | WatchMask::CLOSE)
+            .expect("Failed to add file watch");
+
+        // Read events that were added with `Watches::add` above.
+        let buffer = [0; 1024];
+        let mut events = inotify.into_event_stream(buffer)
+            .expect("Error while reading events");
+
+        while let Some(event_or_error) = events.next().await {
+            tracing::debug!("event: {:?}", event_or_error.unwrap());
+            tokens.read(&path).await
+        }
+    }
 }
 
 #[cfg(feature = "magic_static")]
@@ -431,12 +490,20 @@ fn rocket() -> rocket::Rocket<Build> {
                 let config_cloned = config.clone();
                 thread::spawn(move || file::cleanup_routine(db_cloned, config_cloned));
 
+                let mut tokens = Tokens::new();
+                tokens.read(&config.token_file).await;
+                let tokens_clone = tokens.clone();
+                let token_file = config.token_file.to_owned();
+                thread::spawn(move || Tokens::refresh(tokens_clone, token_file));
+
                 rocket.manage(ConfigState {
                     db,
                     tera,
                     syntax_set: SyntaxSet::load_defaults_newlines(),
                     theme_set: ThemeSet::load_defaults(),
                     app_config: config,
+
+                    tokens,
                 })
             })
         }))

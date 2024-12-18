@@ -43,6 +43,7 @@
         in
         {
           nci = {
+            # TODO clean source
             projects."pastor".path = ./.;
             crates."pastor" =
               let
