@@ -1,5 +1,6 @@
 use std::{path::Path, sync::Arc, thread, time::Duration};
 
+
 use chrono::{TimeZone, Utc};
 use rocket::http::Status;
 use tracing::debug;
@@ -55,10 +56,10 @@ mod tests {
         process::Termination,
     };
 
-    use crate::{id::PasteId, Paste};
+    use crate::{Paste, id::PasteId};
 
     use super::*;
-    use anyhow::{anyhow, Result};
+    use anyhow::{Result, anyhow};
 
     use test::Bencher;
 

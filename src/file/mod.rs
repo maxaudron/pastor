@@ -1,10 +1,10 @@
 mod delete;
 mod get;
-mod store;
+// mod store;
 
 pub use delete::*;
 pub use get::*;
-pub use store::*;
+// pub use store::*;
 
 use rocket::State;
 

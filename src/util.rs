@@ -14,19 +14,19 @@ pub static MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
     "application/x-shellscript" => "sh",
 };
 
-pub struct HostHeader<'a>(pub &'a str);
-
-#[async_trait]
-impl<'r> FromRequest<'r> for HostHeader<'r> {
-    type Error = ();
-
-    async fn from_request(request: &'r Request<'_>) -> rocket::request::Outcome<Self, Self::Error> {
-        match request.headers().get_one("Host") {
-            Some(h) => Outcome::Success(HostHeader(h)),
-            None => Outcome::Forward(()),
-        }
-    }
-}
+// pub struct HostHeader<'a>(pub &'a str);
+//
+// #[async_trait]
+// impl<'r> FromRequest<'r> for HostHeader<'r> {
+//     type Error = ();
+//
+//     async fn from_request(request: &'r Request<'_>) -> rocket::request::Outcome<Self, Self::Error> {
+//         match request.headers().get_one("Host") {
+//             Some(h) => Outcome::Success(HostHeader(h)),
+//             None => Outcome::Forward(()),
+//         }
+//     }
+// }
 
 pub fn expires(size: u64) -> i64 {
     let min_age = 5.0;

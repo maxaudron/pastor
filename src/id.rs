@@ -1,6 +1,7 @@
 use std::fmt;
 
 use rocket::{form::FromFormField, request::FromParam};
+use serde::{Deserialize, Serialize};
 
 use crate::dict::*;
 
