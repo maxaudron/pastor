@@ -1,0 +1,12 @@
+[remote "origin"]
+  url = git@git.vapor.systems:pastor.git
+  fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "gitlab"]
+  url = git@gitlab.com:cocainefarm/pastor.git
+  fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "github"]
+  url = git@github.com:maxaudron/pastor.git
+  fetch = +refs/heads/*:refs/remotes/origin/*
+[remote "codeberg"]
+  url = git@codeberg.org:maxaudron/pastor.git
+  fetch = +refs/heads/*:refs/remotes/origin/*
