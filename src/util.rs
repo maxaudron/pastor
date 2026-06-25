@@ -1,11 +1,6 @@
-use rocket::outcome::Outcome;
-use rocket::request::FromRequest;
-use rocket::Request;
 use syntect::parsing::{SyntaxReference, SyntaxSet};
 
 use phf::phf_map;
-
-use async_trait::async_trait;
 
 pub static MIME_EXT: phf::Map<&'static str, &'static str> = phf_map! {
     "text/plain" => "txt", // This one might be unnecessary

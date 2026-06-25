@@ -1,11 +1,10 @@
 use std::fmt;
 
-use rocket::{form::FromFormField, request::FromParam};
 use serde::{Deserialize, Serialize};
 
 use crate::dict::*;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PasteId {
     pub id: String,
     pub ext: Option<String>,
@@ -61,24 +60,8 @@ impl fmt::Display for PasteId {
     }
 }
 
-impl<'a> FromParam<'a> for PasteId {
-    type Error = &'a str;
-
-    fn from_param(param: &'a str) -> Result<PasteId, &'a str> {
-        let paste_id = PasteId::from(param);
-        match paste_id.is_valid() {
-            true => Ok(paste_id),
-            false => Err(param),
-        }
-    }
-}
-
-impl<'v> FromFormField<'v> for PasteId {
-    fn from_value(field: rocket::form::ValueField<'v>) -> rocket::form::Result<'v, Self> {
-        let paste_id = PasteId::from(field.value);
-        match paste_id.is_valid() {
-            true => Ok(paste_id),
-            false => Err(field.unexpected().into()),
-        }
+impl AsRef<std::path::Path> for PasteId {
+    fn as_ref(&self) -> &std::path::Path {
+        std::path::Path::new(&self.id)
     }
 }

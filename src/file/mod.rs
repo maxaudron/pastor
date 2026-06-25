@@ -1,15 +1,158 @@
-mod delete;
-mod get;
-// mod store;
+use std::{
+    os::unix::fs::MetadataExt,
+    path::{Path, PathBuf},
+};
 
-pub use delete::*;
-pub use get::*;
-// pub use store::*;
+use tokio::{
+    fs::OpenOptions,
+    io::{AsyncReadExt, AsyncSeekExt},
+};
+use tracing::{debug, instrument};
 
-use rocket::State;
+use crate::id::PasteId;
 
-use crate::ConfigState;
+mod error;
+mod handle;
 
-pub fn build_path(id: &str, config: &State<ConfigState>) -> std::path::PathBuf {
-    std::path::Path::new(&config.app_config.storage_dir).join(&id)
+pub use error::*;
+pub use handle::*;
+
+const XATTR_CREATED: &str = "user.pastor.created";
+const XATTR_EXPIRES: &str = "user.pastor.expires";
+const XATTR_TOKEN: &str = "user.pastor.token";
+const XATTR_MIME: &str = "user.pastor.mime";
+
+#[derive(PartialEq, Debug)]
+pub struct Paste {
+    pub id: PasteId,
+    pub created: i64,
+    pub expires: i64,
+    pub token: String,
+    pub mime: String,
+}
+
+impl Paste {
+    pub fn path(&self, root: &Path) -> PathBuf {
+        root.join(&self.id)
+    }
+
+    pub async fn get_handle(root: &Path, id: &PasteId) -> Result<PasteHandle, PasteError> {
+        Ok(OpenOptions::new()
+            .read(true)
+            .write(true)
+            .create(true)
+            .open(root.join(id))
+            .await?
+            .into())
+    }
+
+    #[instrument(level = "debug", ret, err, skip(handle))]
+    pub async fn from_handle(
+        mut id: PasteId,
+        mut handle: PasteHandle,
+        token: &str,
+    ) -> Result<Paste, PasteError> {
+        let size = handle.metadata().await.unwrap().size();
+        if size == 0 {
+            return Err(PasteError::NoContent);
+        }
+
+        let created = chrono::Utc::now().timestamp();
+        let expires = created + crate::util::expires(size);
+        debug!("got file size: {size} will expire: {expires}");
+
+        let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
+        handle.seek(std::io::SeekFrom::Start(0)).await?;
+        handle
+            .to_file()
+            .take(2048)
+            .read_to_end(&mut mime_bytes)
+            .await
+            .unwrap();
+
+        let mime = crate::MAGIC.with(|magic| magic.buffer(&mime_bytes))?;
+        let ext = crate::EXT.with(|magic| magic.buffer(&mime_bytes))?;
+        debug!("got mime type: {:?} {:?}", mime, ext);
+        if ext != "???" {
+            id.ext = Some(
+                ext.split_once("/")
+                    .map(|(s, _)| s)
+                    .unwrap_or(&ext)
+                    .to_string(),
+            )
+        }
+
+        Ok(Paste {
+            id,
+            created,
+            expires,
+            token: token.to_string(),
+            mime,
+        })
+    }
+
+    pub async fn write(&self, root: &Path) -> Result<(), PasteError> {
+        let file = Paste::get_handle(root, &self.id).await?;
+        file.set_xattr_i64(XATTR_CREATED, self.created).unwrap();
+        file.set_xattr_i64(XATTR_EXPIRES, self.expires).unwrap();
+        file.set_xattr_str(XATTR_TOKEN, &self.token).unwrap();
+        file.set_xattr_str(XATTR_MIME, &self.mime).unwrap();
+
+        Ok(())
+    }
+
+    pub async fn load(root: &Path, id: PasteId) -> Result<(Paste, PasteHandle), PasteError> {
+        let file = Paste::get_handle(root, &id).await?;
+        let paste = Paste {
+            id,
+            created: file.get_xattr_i64(XATTR_CREATED)?,
+            expires: file.get_xattr_i64(XATTR_EXPIRES)?,
+            token: file.get_xattr_str(XATTR_TOKEN)?,
+            mime: file.get_xattr_str(XATTR_MIME)?,
+        };
+
+        Ok((paste, file))
+    }
+
+    /// Delete the paste from storage if a matching auth token is supplied
+    pub async fn delete(&self, root: &Path, token: &str) -> Result<(), PasteError> {
+        if self.token == token {
+            Ok(tokio::fs::remove_file(self.path(root)).await?)
+        } else {
+            Err(PasteError::Unauthorized)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use tempfile::tempdir;
+    use tracing_test::traced_test;
+
+    use super::Paste;
+    use crate::id::PasteId;
+
+    fn paste() -> Paste {
+        Paste {
+            id: PasteId::new(),
+            created: 17000000,
+            expires: 18000000,
+            token: "secrettoken".to_string(),
+            mime: "text/plain".to_string(),
+        }
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn write_load() {
+        let dir = tempdir().unwrap();
+        let root = dir.path();
+        let paste = paste();
+
+        paste.write(root).await.unwrap();
+        assert!(root.join(&paste.id).exists());
+
+        let (loaded, _handle) = Paste::load(root, paste.id.clone()).await.unwrap();
+        assert_eq!(paste, loaded);
+    }
 }

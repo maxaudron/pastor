@@ -23,30 +23,30 @@ Files
 
   Upload files:
   -----------------------------------------------------------------------------------
-  $ curl -F a=@vim.png b=@vim2.png https://{{ url }}/?token=<secret token>
-  https://{{ url }}/picturedsalters
+  $ curl -F a=@vim.png b=@vim2.png https://{{host}}/?token=<secret token>
+  https://{{host}}/picturedsalters
   -----------------------------------------------------------------------------------
 
  Retrieve
 
   Retrieve file:
   -----------------------------------------------------------------------------------
-  GET https://{{ url }}/picturedsalters
+  GET https://{{host}}/picturedsalters
   -----------------------------------------------------------------------------------
 
   View file with syntax highlighting:
   -----------------------------------------------------------------------------------
-  GET https://{{ url }}/picturedsalters?lang=rust
-  GET https://{{ url }}/picturedsalters?lang=auto (attempts detection)
+  GET https://{{host}}/picturedsalters?lang=rust
+  GET https://{{host}}/picturedsalters?lang=auto (attempts detection)
   -----------------------------------------------------------------------------------
 
  Delete
 
   Delete file:
   -----------------------------------------------------------------------------------
-  $ curl -X DELETE https://{{ url }}/picturedsalters?token=<secret token>
+  $ curl -X DELETE https://{{host}}/picturedsalters?token=<secret token>
   or
-  GET https://{{ url }}/delete/picturedsalters?token=<secret token>
+  GET https://{{host}}/delete/picturedsalters?token=<secret token>
   -----------------------------------------------------------------------------------
 
 Expiry
@@ -89,7 +89,7 @@ You can request your very own secret token from audron.
 GUI
 =====
 
-A graphical user interface is available at: <a href="/gui">https://{{ url }}/gui</a>
+A graphical user interface is available at: <a href="/gui">https://{{host}}/gui</a>
 
 Source
 =====

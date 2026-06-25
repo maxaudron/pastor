@@ -1,57 +1,117 @@
+#![allow(unused)]
+
+use std::path::PathBuf;
+
 use axum::{
     Router,
+    body::Body,
     extract::{Multipart, Path, State},
-    http::{HeaderMap, header, status::StatusCode},
-    response::IntoResponse,
+    http::{header, status::StatusCode},
+    middleware::{self, FromFnLayer},
+    response::{IntoResponse, Response},
     routing,
 };
+use axum_extra::{
+    TypedHeader,
+    headers::{Authorization, Host, authorization::Bearer},
+};
+use tokio::io::AsyncWriteExt;
+use tracing::{debug, instrument};
 
-use crate::tokens::Tokens;
+use crate::{
+    file::{Paste, PasteError},
+    handlers::auth,
+    id::PasteId,
+    tokens::Tokens,
+};
 
 #[derive(Debug, Clone)]
 pub struct FileState {
     pub tokens: Tokens,
+    pub storage: PathBuf,
 }
 
 impl FileState {
-    pub fn new() -> FileState {
+    pub async fn new(storage: PathBuf, tokens: PathBuf) -> FileState {
         FileState {
-            tokens: Tokens::new(),
+            tokens: Tokens::new(tokens.clone()).await,
+            storage,
         }
     }
 }
 
-pub fn router(state: FileState) -> Router {
+pub fn router(state: FileState, auth_state: auth::Auth) -> Router {
+    let auth = middleware::from_fn_with_state(auth_state, auth::auth);
+
     Router::new()
-        .route("/", routing::post(upload))
-        .route("/{id}", routing::get(retrieve))
         .route("/{id}", routing::delete(delete))
+        .route("/", routing::post(upload))
+        .route_layer(auth)
+        .route("/{id}", routing::get(retrieve))
         .with_state(state)
 }
 
-async fn upload(mut multipart: Multipart) -> impl IntoResponse {
-    while let Some(field) = multipart.next_field().await.unwrap() {
-        let name = field.name().unwrap().to_string();
-        let data = field.bytes().await.unwrap();
-
-        println!("Length of `{}` is {} bytes", name, data.len());
-    }
-
-    "fuck you"
-}
-
-async fn retrieve(Path(id): Path<String>) -> impl IntoResponse {
-    "fuck you"
-}
-
-async fn delete(State(state): State<FileState>, Path(id): Path<String>, headers: HeaderMap) -> impl IntoResponse {
-    if let Some(token) = headers.get(header::AUTHORIZATION)
-        && let Ok(token) = token.to_str()
-        && let Some(token) = token.strip_prefix("Bearer ")
-        && state.tokens.contains(token).await
+#[instrument(level = "trace")]
+async fn upload(
+    State(state): State<FileState>,
+    TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
+    TypedHeader(host): TypedHeader<Host>,
+    mut multipart: Multipart,
+) -> Result<impl IntoResponse, PasteError> {
+    let mut pastes = Vec::new();
+    while let Some(mut field) = multipart
+        .next_field()
+        .await
+        .map_err(|err| PasteError::NoContent)?
     {
-        return StatusCode::OK;
+        let id = PasteId::new();
+        debug!("new file with id: {id}");
+        let mut handle = Paste::get_handle(&state.storage, &id).await?;
+        while let Some(chunk) = field.chunk().await.map_err(|err| PasteError::NoContent)? {
+            handle.write_all(&chunk).await?;
+        }
+
+        handle.flush().await?;
+
+        let paste = Paste::from_handle(id, handle, bearer.token()).await?;
+        paste.write(&state.storage).await?;
+        pastes.push(paste);
     }
 
-    StatusCode::UNAUTHORIZED
+    Ok(pastes
+        .iter()
+        .map(|p| p.id.to_string())
+        .fold(String::new(), |mut s, p| {
+            s.push_str(&format!("https://{host}/{p}"));
+            s.push('\n');
+            s
+        }))
+}
+
+#[instrument(level = "trace")]
+async fn retrieve(
+    State(state): State<FileState>,
+    Path(id): Path<PasteId>,
+) -> Result<impl IntoResponse, PasteError> {
+    let (paste, file) = Paste::load(&state.storage, id).await?;
+    let stream = tokio_util::io::ReaderStream::new(file.to_file());
+
+    Ok(Response::builder()
+        .status(StatusCode::OK)
+        .header(header::CONTENT_TYPE, paste.mime)
+        .header(header::CONTENT_DISPOSITION, "inline")
+        .body(Body::from_stream(stream))
+        .unwrap())
+}
+
+#[instrument(level = "trace")]
+async fn delete(
+    State(state): State<FileState>,
+    Path(id): Path<PasteId>,
+    TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
+) -> Result<impl IntoResponse, PasteError> {
+    let (paste, _) = Paste::load(&state.storage, id).await?;
+    paste.delete(&state.storage, bearer.token()).await?;
+
+    Ok(StatusCode::OK)
 }

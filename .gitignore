@@ -1,5 +1,6 @@
 /target
 /storage
+/tokens.toml
 /test-data
 /deploy/vendor
 /.direnv
