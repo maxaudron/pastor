@@ -56,24 +56,22 @@ async fn upload(
     TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
     TypedHeader(host): TypedHeader<Host>,
     mut multipart: Multipart,
-) -> Result<impl IntoResponse, PasteError> {
+) -> Result<Response, PasteError> {
     let mut pastes: Vec<Result<Paste, (PasteId, PasteError)>> = Vec::new();
 
     loop {
         let field = match multipart.next_field().await {
             Ok(Some(field)) => field,
             Ok(None) => break,
-            Err(err) => {
-                error!("failed to read multipart field: {err}");
-                break;
-            }
+            Err(err) => return Err(PasteError::from(err)),
         };
 
         let id = PasteId::new();
         debug!("new file with id: {id}");
 
         let result: Result<Paste, PasteError> = (|| async {
-            let mut handle = Paste::get_handle_create(&state.storage.join(&id)).await?;
+            let mut handle =
+                Paste::get_handle_create(&state.storage.join(&id)).await?;
 
             let mut field = field;
             while let Some(chunk) = field.chunk().await.map_err(PasteError::from)? {
@@ -101,7 +99,12 @@ async fn upload(
         }
     }
 
+    if pastes.is_empty() {
+        return Err(PasteError::NoContent);
+    }
+
     let mut result = String::new();
+    let mut first_err_status: Option<StatusCode> = None;
 
     for p in pastes {
         match p {
@@ -110,13 +113,24 @@ async fn upload(
                 result.push('\n');
             }
             Err((_id, err)) => {
-                result.push_str(&err.to_string());
+                error!("failed to create paste: {err}");
+                let err_str = err.to_string();
+                if first_err_status.is_none() {
+                    first_err_status = Some(err.into_response().status().clone());
+                }
+                result.push_str(&err_str);
                 result.push('\n');
             }
         }
     }
 
-    Ok(result)
+    match first_err_status {
+        None => Ok(result.into_response()),
+        Some(status) => Ok(Response::builder()
+            .status(status)
+            .body(Body::from(result))
+            .unwrap()),
+    }
 }
 
 #[instrument(level = "trace")]
