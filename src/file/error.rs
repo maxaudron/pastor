@@ -68,15 +68,12 @@ impl IntoResponse for PasteError {
                     .body(Body::from(self.to_string()))
                     .unwrap();
             }
-            PasteError::IOError(err) => match err.kind() {
-                std::io::ErrorKind::NotFound => {
-                    return Response::builder()
-                        .status(StatusCode::NOT_FOUND)
-                        .body(Body::from("NOT FOUND\n"))
-                        .unwrap();
-                }
-                _ => (),
-            },
+            PasteError::IOError(err) if err.kind() == std::io::ErrorKind::NotFound => {
+                return Response::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .body(Body::from("NOT FOUND\n"))
+                    .unwrap();
+            }
             _ => (),
         }
 

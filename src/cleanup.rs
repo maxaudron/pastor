@@ -68,7 +68,7 @@ mod tests {
     async fn cleanup() {
         let dir = tempdir().unwrap();
         let storage = dir.path();
-        let paste1 = write_paste(storage, 0).await;
+        let paste1 = write_paste(storage, -10).await;
         let paste2 = write_paste(storage, 60).await;
 
         crate::cleanup::cleanup(storage).await.unwrap();
@@ -82,7 +82,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let storage = dir.path();
 
-        let _file = tokio::fs::write(storage.join("testfile"), "").await.unwrap();
+        tokio::fs::write(storage.join("testfile"), "").await.unwrap();
         crate::cleanup::cleanup(storage).await.unwrap();
         assert!(!storage.join("testfile").exists());
     }

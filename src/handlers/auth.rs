@@ -35,8 +35,7 @@ pub async fn auth(
     next: Next,
 ) -> Response {
     if state.tokens.contains(bearer.token()).await {
-        let response = next.run(request).await;
-        response
+        next.run(request).await
     } else {
         debug!(
             "token: {:?} was not found in allowed tokens: {:?}",

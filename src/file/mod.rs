@@ -45,6 +45,7 @@ impl Paste {
             .read(true)
             .write(true)
             .create(true)
+            .truncate(true)
             .open(path)
             .await?
             .into())
@@ -78,7 +79,7 @@ impl Paste {
         let mut mime_bytes: Vec<u8> = Vec::with_capacity(2048);
         handle.seek(std::io::SeekFrom::Start(0)).await?;
         handle
-            .to_file()
+            .into_file()
             .take(2048)
             .read_to_end(&mut mime_bytes)
             .await
@@ -138,7 +139,7 @@ impl Paste {
 
     /// Delete the paste from storage if a matching auth token is supplied
     pub async fn delete(&self, root: &Path, token: Option<&str>) -> Result<(), PasteError> {
-        if token == Some(&self.token) || !token.is_some() {
+        if token == Some(&self.token) || token.is_none() {
             Ok(tokio::fs::remove_file(self.path(root)).await?)
         } else {
             Err(PasteError::Unauthorized)

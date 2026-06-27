@@ -72,7 +72,7 @@ mod tests {
 
     fn sample_tokens() -> TomlTokens {
         TomlTokens {
-            tokens: vec!["testtoken", "supertoken", "anothertoken"]
+            tokens: ["testtoken", "supertoken", "anothertoken"]
                 .iter()
                 .map(|x| x.to_string())
                 .collect(),
@@ -83,7 +83,7 @@ mod tests {
     #[traced_test]
     async fn initial_load() -> Result<(), Error> {
         let mut file = NamedTempFile::new()?;
-        file.write(toml::to_string(&sample_tokens())?.as_bytes())?;
+        file.write_all(toml::to_string(&sample_tokens())?.as_bytes())?;
 
         let tokens = Tokens::new(file.path().into()).await;
 
@@ -99,7 +99,7 @@ mod tests {
     async fn add_token() -> Result<(), Error> {
         let mut file = NamedTempFile::new()?;
         let mut toml_tokens = sample_tokens();
-        file.write(toml::to_string(&toml_tokens)?.as_bytes())?;
+        file.write_all(toml::to_string(&toml_tokens)?.as_bytes())?;
         let tokens = Tokens::new(file.path().into()).await;
 
         let handle = tokio::spawn(tokens.clone().refresh());

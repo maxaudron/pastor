@@ -69,7 +69,7 @@ async fn upload(
         let id = PasteId::new();
         debug!("new file with id: {id}");
 
-        let result: Result<Paste, PasteError> = (|| async {
+        let result: Result<Paste, PasteError> = async {
             let mut handle = Paste::get_handle_create(&state.storage.join(&id)).await?;
 
             let mut field = field;
@@ -83,7 +83,7 @@ async fn upload(
             paste.write(&state.storage).await?;
 
             Ok(paste)
-        })()
+        }
         .await;
 
         match result {
@@ -115,7 +115,7 @@ async fn upload(
                 error!("failed to create paste: {err}");
                 let err_str = err.to_string();
                 if first_err_status.is_none() {
-                    first_err_status = Some(err.into_response().status().clone());
+                    first_err_status = Some(err.into_response().status());
                 }
                 result.push_str(&err_str);
                 result.push('\n');
@@ -144,7 +144,7 @@ async fn retrieve(
         return Err(PasteError::NotFound);
     }
 
-    let stream = tokio_util::io::ReaderStream::new(file.to_file());
+    let stream = tokio_util::io::ReaderStream::new(file.into_file());
 
     Ok(Response::builder()
         .status(StatusCode::OK)

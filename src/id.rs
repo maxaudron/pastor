@@ -44,36 +44,32 @@ impl PasteId {
         use rand::seq::SliceRandom;
 
         let mut rng = rand::thread_rng();
-        let id =
-            DICT_ADJ.choose(&mut rng).unwrap().to_string() + &DICT_NOUN.choose(&mut rng).unwrap().to_string();
+        let id = DICT_ADJ.choose(&mut rng).unwrap().to_string() + DICT_NOUN.choose(&mut rng).unwrap();
 
         Self { id, ext: None }
     }
 
     pub fn path(&self, root: &Path) -> std::path::PathBuf {
-        root.join(&self)
+        root.join(self)
     }
 
     #[allow(unused)]
-    pub fn ext<'a>(&'a self) -> &'a str {
+    pub fn ext(&self) -> &str {
         self.ext.as_ref().map_or("", |s| s.as_str())
     }
 
     #[allow(unused)]
     pub fn is_valid(&self) -> bool {
-        self.id.chars().all(|c| c >= 'a' && c <= 'z') && self.id.len() <= 128
+        self.id.chars().all(|c: char| c.is_ascii_lowercase()) && self.id.len() <= 128
     }
 }
 
 impl fmt::Display for PasteId {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         f.write_str(&self.id)?;
-        match &self.ext {
-            Some(e) => {
-                f.write_str(".")?;
-                f.write_str(&e)?;
-            }
-            None => (),
+        if let Some(e) = &self.ext {
+            f.write_str(".")?;
+            f.write_str(e)?;
         };
 
         Ok(())
