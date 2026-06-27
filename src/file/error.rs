@@ -1,4 +1,4 @@
-use std::str::Utf8Error;
+use std::{path::PathBuf, str::Utf8Error};
 
 use axum::{
     body::Body,
@@ -19,16 +19,28 @@ pub enum PasteError {
     StrParseError(#[from] Utf8Error),
     #[error("failed to guess mime type: {0}")]
     MagicError(#[from] magic::cookie::Error),
+    #[error("failed to parse PasteId from path: {0}")]
+    PasteIdFromPath(PathBuf),
 
     #[error("Unauthorized to operate on this paste")]
     Unauthorized,
     #[error("paste did not contain any content")]
     NoContent,
+    #[error("NOT FOUND")]
+    NotFound,
+    #[error("time did not work")]
+    Time,
 }
 
 impl IntoResponse for PasteError {
     fn into_response(self) -> axum::response::Response {
         match &self {
+            PasteError::NotFound => {
+                return Response::builder()
+                    .status(StatusCode::NOT_FOUND)
+                    .body(Body::from(self.to_string()))
+                    .unwrap();
+            }
             PasteError::Unauthorized => {
                 return Response::builder()
                     .status(StatusCode::UNAUTHORIZED)

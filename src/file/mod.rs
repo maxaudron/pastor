@@ -36,12 +36,27 @@ impl Paste {
         root.join(&self.id)
     }
 
-    pub async fn get_handle(root: &Path, id: &PasteId) -> Result<PasteHandle, PasteError> {
+    pub fn expired(&self) -> Result<bool, PasteError> {
+        Ok(chrono::Utc::now()
+            > chrono::DateTime::from_timestamp(self.expires, 0).ok_or(PasteError::Time)?)
+    }
+
+    pub async fn get_handle_create(path: &Path) -> Result<PasteHandle, PasteError> {
         Ok(OpenOptions::new()
             .read(true)
             .write(true)
             .create(true)
-            .open(root.join(id))
+            .open(path)
+            .await?
+            .into())
+    }
+
+    pub async fn get_handle(path: &Path) -> Result<PasteHandle, PasteError> {
+        Ok(OpenOptions::new()
+            .read(true)
+            .write(false)
+            .create(false)
+            .open(path)
             .await?
             .into())
     }
@@ -92,7 +107,7 @@ impl Paste {
     }
 
     pub async fn write(&self, root: &Path) -> Result<(), PasteError> {
-        let file = Paste::get_handle(root, &self.id).await?;
+        let file = Paste::get_handle_create(&root.join(&self.id)).await?;
         file.set_xattr_i64(XATTR_CREATED, self.created).unwrap();
         file.set_xattr_i64(XATTR_EXPIRES, self.expires).unwrap();
         file.set_xattr_str(XATTR_TOKEN, &self.token).unwrap();
@@ -102,7 +117,16 @@ impl Paste {
     }
 
     pub async fn load(root: &Path, id: PasteId) -> Result<(Paste, PasteHandle), PasteError> {
-        let file = Paste::get_handle(root, &id).await?;
+        Paste::load_from_path(&root.join(&id), Some(id)).await
+    }
+
+    pub async fn load_from_path(path: &Path, id: Option<PasteId>) -> Result<(Paste, PasteHandle), PasteError> {
+        let file = Paste::get_handle(path).await?;
+        let id = if let Some(id) = id {
+            id
+        } else {
+            PasteId::try_from(path)?
+        };
         let paste = Paste {
             id,
             created: file.get_xattr_i64(XATTR_CREATED)?,
@@ -115,8 +139,8 @@ impl Paste {
     }
 
     /// Delete the paste from storage if a matching auth token is supplied
-    pub async fn delete(&self, root: &Path, token: &str) -> Result<(), PasteError> {
-        if self.token == token {
+    pub async fn delete(&self, root: &Path, token: Option<&str>) -> Result<(), PasteError> {
+        if token == Some(&self.token) || !token.is_some() {
             Ok(tokio::fs::remove_file(self.path(root)).await?)
         } else {
             Err(PasteError::Unauthorized)

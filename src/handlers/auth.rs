@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use std::path::PathBuf;
 
 use axum::{

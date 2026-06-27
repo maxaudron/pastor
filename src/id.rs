@@ -1,13 +1,26 @@
-use std::fmt;
+use std::{fmt, path::Path};
 
 use serde::{Deserialize, Serialize};
 
-use crate::dict::*;
+use crate::{dict::*, file::PasteError};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct PasteId {
     pub id: String,
     pub ext: Option<String>,
+}
+
+impl TryFrom<&Path> for PasteId {
+    type Error = PasteError;
+
+    fn try_from(path: &Path) -> Result<Self, Self::Error> {
+        Ok(PasteId::from(
+            path.file_name()
+                .ok_or(PasteError::PasteIdFromPath(path.into()))?
+                .to_str()
+                .ok_or(PasteError::PasteIdFromPath(path.into()))?,
+        ))
+    }
 }
 
 impl From<&str> for PasteId {
@@ -36,10 +49,12 @@ impl PasteId {
         Self { id, ext: None }
     }
 
+    #[allow(unused)]
     pub fn ext<'a>(&'a self) -> &'a str {
         self.ext.as_ref().map_or("", |s| s.as_str())
     }
 
+    #[allow(unused)]
     pub fn is_valid(&self) -> bool {
         self.id.chars().all(|c| c >= 'a' && c <= 'z') && self.id.len() <= 128
     }

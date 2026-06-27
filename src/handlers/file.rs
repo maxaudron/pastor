@@ -1,5 +1,3 @@
-#![allow(unused)]
-
 use std::path::PathBuf;
 
 use axum::{
@@ -7,7 +5,7 @@ use axum::{
     body::Body,
     extract::{Multipart, Path, State},
     http::{header, status::StatusCode},
-    middleware::{self, FromFnLayer},
+    middleware,
     response::{IntoResponse, Response},
     routing,
 };
@@ -62,12 +60,12 @@ async fn upload(
     while let Some(mut field) = multipart
         .next_field()
         .await
-        .map_err(|err| PasteError::NoContent)?
+        .map_err(|_| PasteError::NoContent)?
     {
         let id = PasteId::new();
         debug!("new file with id: {id}");
-        let mut handle = Paste::get_handle(&state.storage, &id).await?;
-        while let Some(chunk) = field.chunk().await.map_err(|err| PasteError::NoContent)? {
+        let mut handle = Paste::get_handle_create(&state.storage.join(&id)).await?;
+        while let Some(chunk) = field.chunk().await.map_err(|_| PasteError::NoContent)? {
             handle.write_all(&chunk).await?;
         }
 
@@ -94,6 +92,11 @@ async fn retrieve(
     Path(id): Path<PasteId>,
 ) -> Result<impl IntoResponse, PasteError> {
     let (paste, file) = Paste::load(&state.storage, id).await?;
+    if paste.expired()? {
+        paste.delete(&state.storage, None).await?;
+        return Err(PasteError::NotFound);
+    }
+
     let stream = tokio_util::io::ReaderStream::new(file.to_file());
 
     Ok(Response::builder()
@@ -111,7 +114,7 @@ async fn delete(
     TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
 ) -> Result<impl IntoResponse, PasteError> {
     let (paste, _) = Paste::load(&state.storage, id).await?;
-    paste.delete(&state.storage, bearer.token()).await?;
+    paste.delete(&state.storage, Some(bearer.token())).await?;
 
     Ok(StatusCode::OK)
 }
