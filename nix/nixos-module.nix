@@ -13,6 +13,8 @@ with lib;
 {
   options = {
     services.pastor = {
+      enable = lib.mkEnableOption "pastor";
+
       package = mkOption {
         defaultText = lib.literalMD "`packages.default` from the pastor flake";
       };
@@ -72,7 +74,7 @@ with lib;
     };
   };
 
-  config = {
+  config = lib.mkIf cfg.enable {
     systemd.services.pastor = {
       description = "Pastor: The Bestest Pastebin";
       after = [

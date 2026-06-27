@@ -82,6 +82,9 @@ async fn main() {
     tracing_subscriber::fmt::init();
     let args = Args::parse();
 
+    // Create storage dir on startup
+    tokio::fs::create_dir(&args.storage).await.unwrap();
+
     let auth_state = auth::Auth::new(args.tokens.clone()).await;
     let file_state =
         handlers::file::FileState::new(args.storage.clone(), args.tokens.clone()).await;
