@@ -44,8 +44,8 @@ impl PasteId {
         use rand::seq::SliceRandom;
 
         let mut rng = rand::thread_rng();
-        let id = DICT_ADJ.choose(&mut rng).unwrap().to_string()
-            + &DICT_NOUN.choose(&mut rng).unwrap().to_string();
+        let id =
+            DICT_ADJ.choose(&mut rng).unwrap().to_string() + &DICT_NOUN.choose(&mut rng).unwrap().to_string();
 
         Self { id, ext: None }
     }

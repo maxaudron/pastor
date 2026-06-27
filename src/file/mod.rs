@@ -37,8 +37,7 @@ impl Paste {
     }
 
     pub fn expired(&self) -> Result<bool, PasteError> {
-        Ok(chrono::Utc::now()
-            > chrono::DateTime::from_timestamp(self.expires, 0).ok_or(PasteError::Time)?)
+        Ok(chrono::Utc::now() > chrono::DateTime::from_timestamp(self.expires, 0).ok_or(PasteError::Time)?)
     }
 
     pub async fn get_handle_create(path: &Path) -> Result<PasteHandle, PasteError> {
@@ -89,12 +88,7 @@ impl Paste {
         let ext = crate::EXT.with(|magic| magic.buffer(&mime_bytes))?;
         debug!("got mime type: {:?} {:?}", mime, ext);
         if ext != "???" {
-            id.ext = Some(
-                ext.split_once("/")
-                    .map(|(s, _)| s)
-                    .unwrap_or(&ext)
-                    .to_string(),
-            )
+            id.ext = Some(ext.split_once("/").map(|(s, _)| s).unwrap_or(&ext).to_string())
         }
 
         Ok(Paste {
@@ -120,7 +114,10 @@ impl Paste {
         Paste::load_from_path(&root.join(&id), Some(id)).await
     }
 
-    pub async fn load_from_path(path: &Path, id: Option<PasteId>) -> Result<(Paste, PasteHandle), PasteError> {
+    pub async fn load_from_path(
+        path: &Path,
+        id: Option<PasteId>,
+    ) -> Result<(Paste, PasteHandle), PasteError> {
         debug!("loading paste from path: {path:?}");
         let file = Paste::get_handle(path).await?;
         let id = if let Some(id) = id {

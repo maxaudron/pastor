@@ -33,12 +33,7 @@ impl PasteHandle {
     }
 
     pub fn get_xattr_str(&self, name: &'static str) -> Result<String, PasteError> {
-        Ok(str::from_utf8(
-            &self
-                .get_xattr(name)?
-                .ok_or(PasteError::XattrNotFound(name))?,
-        )?
-        .to_owned())
+        Ok(str::from_utf8(&self.get_xattr(name)?.ok_or(PasteError::XattrNotFound(name))?)?.to_owned())
     }
 
     pub fn to_file(self) -> File {

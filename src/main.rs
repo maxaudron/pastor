@@ -86,8 +86,7 @@ async fn main() {
     tokio::fs::create_dir(&args.storage).await.unwrap();
 
     let auth_state = auth::Auth::new(args.tokens.clone()).await;
-    let file_state =
-        handlers::file::FileState::new(args.storage.clone(), args.tokens.clone()).await;
+    let file_state = handlers::file::FileState::new(args.storage.clone(), args.tokens.clone()).await;
 
     let tokens = file_state.tokens.clone();
     let token_handle = tokio::spawn(tokens.refresh());

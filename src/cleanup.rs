@@ -26,10 +26,7 @@ pub async fn cleanup(storage: &Path) -> Result<(), PasteError> {
                     return Ok(());
                 }
 
-                debug!(
-                    "Deleting: {paste:?}. (Now: {})",
-                    chrono::Utc::now().timestamp()
-                );
+                debug!("Deleting: {paste:?}. (Now: {})", chrono::Utc::now().timestamp());
             }
             Err(err) => {
                 error!("got error {err} while cleanup pastes, deleting path {path:?} anyways")
@@ -85,9 +82,7 @@ mod tests {
         let dir = tempdir().unwrap();
         let storage = dir.path();
 
-        let _file = tokio::fs::write(storage.join("testfile"), "")
-            .await
-            .unwrap();
+        let _file = tokio::fs::write(storage.join("testfile"), "").await.unwrap();
         crate::cleanup::cleanup(storage).await.unwrap();
         assert!(!storage.join("testfile").exists());
     }

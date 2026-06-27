@@ -70,8 +70,7 @@ async fn upload(
         debug!("new file with id: {id}");
 
         let result: Result<Paste, PasteError> = (|| async {
-            let mut handle =
-                Paste::get_handle_create(&state.storage.join(&id)).await?;
+            let mut handle = Paste::get_handle_create(&state.storage.join(&id)).await?;
 
             let mut field = field;
             while let Some(chunk) = field.chunk().await.map_err(PasteError::from)? {
