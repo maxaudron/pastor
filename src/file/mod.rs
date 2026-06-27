@@ -33,7 +33,7 @@ pub struct Paste {
 
 impl Paste {
     pub fn path(&self, root: &Path) -> PathBuf {
-        root.join(&self.id)
+        self.id.path(root)
     }
 
     pub fn expired(&self) -> Result<bool, PasteError> {

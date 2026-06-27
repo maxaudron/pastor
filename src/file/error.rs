@@ -23,7 +23,7 @@ pub enum PasteError {
     #[error("failed to parse PasteId from path: {0}")]
     PasteIdFromPath(PathBuf),
     #[error("failed to read multipart data: {0}")]
-    MultipartError(MultipartError),
+    MultipartError(#[from] MultipartError),
 
     #[error("Unauthorized to operate on this paste")]
     Unauthorized,

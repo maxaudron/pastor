@@ -49,6 +49,10 @@ impl PasteId {
         Self { id, ext: None }
     }
 
+    pub fn path(&self, root: &Path) -> std::path::PathBuf {
+        root.join(&self)
+    }
+
     #[allow(unused)]
     pub fn ext<'a>(&'a self) -> &'a str {
         self.ext.as_ref().map_or("", |s| s.as_str())
