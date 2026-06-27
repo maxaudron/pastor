@@ -136,8 +136,9 @@ async fn upload(
 #[instrument(level = "trace")]
 async fn retrieve(
     State(state): State<FileState>,
-    Path(id): Path<PasteId>,
+    Path(id): Path<String>,
 ) -> Result<impl IntoResponse, PasteError> {
+    let id = PasteId::from(id.as_str());
     let (paste, file) = Paste::load(&state.storage, id).await?;
     if paste.expired()? {
         paste.delete(&state.storage, None).await?;
@@ -157,9 +158,10 @@ async fn retrieve(
 #[instrument(level = "trace")]
 async fn delete(
     State(state): State<FileState>,
-    Path(id): Path<PasteId>,
+    Path(id): Path<String>,
     TypedHeader(bearer): TypedHeader<Authorization<Bearer>>,
 ) -> Result<impl IntoResponse, PasteError> {
+    let id = PasteId::from(id.as_str());
     let (paste, _) = Paste::load(&state.storage, id).await?;
     paste.delete(&state.storage, Some(bearer.token())).await?;
 

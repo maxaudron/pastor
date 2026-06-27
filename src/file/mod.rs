@@ -121,6 +121,7 @@ impl Paste {
     }
 
     pub async fn load_from_path(path: &Path, id: Option<PasteId>) -> Result<(Paste, PasteHandle), PasteError> {
+        debug!("loading paste from path: {path:?}");
         let file = Paste::get_handle(path).await?;
         let id = if let Some(id) = id {
             id

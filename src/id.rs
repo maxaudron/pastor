@@ -1,10 +1,10 @@
 use std::{fmt, path::Path};
 
-use serde::{Deserialize, Serialize};
+use tracing::debug;
 
 use crate::{dict::*, file::PasteError};
 
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct PasteId {
     pub id: String,
     pub ext: Option<String>,
@@ -25,6 +25,7 @@ impl TryFrom<&Path> for PasteId {
 
 impl From<&str> for PasteId {
     fn from(input: &str) -> Self {
+        debug!("parsing id from: {input}");
         let (id, ext) = if input.contains('.') {
             let parts = input.split('.').collect::<Vec<&str>>();
             let id_without = parts[0].to_string();
