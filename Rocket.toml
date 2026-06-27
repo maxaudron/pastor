@@ -1,9 +1,0 @@
-[default]
-address = "0.0.0.0"
-limits = { forms = "10 GB", data-form = "10 GB" }
-
-[debug]
-storage_dir = "./storage"
-
-[release]
-storage_dir = "/storage"
