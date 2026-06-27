@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use axum::{
     Router,
     body::Body,
-    extract::{Multipart, Path, State},
+    extract::{DefaultBodyLimit, Multipart, Path, State},
     http::{header, status::StatusCode},
     middleware,
     response::{IntoResponse, Response},
@@ -38,12 +38,13 @@ impl FileState {
     }
 }
 
-pub fn router(state: FileState, auth_state: auth::Auth) -> Router {
+pub fn router(state: FileState, auth_state: auth::Auth, file_size_limit: usize) -> Router {
     let auth = middleware::from_fn_with_state(auth_state, auth::auth);
 
     Router::new()
-        .route("/{id}", routing::delete(delete))
         .route("/", routing::post(upload))
+        .route_layer(DefaultBodyLimit::max(file_size_limit * 1024 * 1024))
+        .route("/{id}", routing::delete(delete))
         .route_layer(auth)
         .route("/{id}", routing::get(retrieve))
         .with_state(state)
@@ -60,12 +61,12 @@ async fn upload(
     while let Some(mut field) = multipart
         .next_field()
         .await
-        .map_err(|_| PasteError::NoContent)?
+        .map_err(PasteError::MultipartError)?
     {
         let id = PasteId::new();
         debug!("new file with id: {id}");
         let mut handle = Paste::get_handle_create(&state.storage.join(&id)).await?;
-        while let Some(chunk) = field.chunk().await.map_err(|_| PasteError::NoContent)? {
+        while let Some(chunk) = field.chunk().await.map_err(PasteError::MultipartError)? {
             handle.write_all(&chunk).await?;
         }
 

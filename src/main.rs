@@ -71,6 +71,10 @@ struct Args {
     /// Path to the folder where pastes are stored in
     #[arg(short, long, env = "PASTOR_STORAGE")]
     storage: PathBuf,
+
+    /// Maximum size of upload in megabytes
+    #[arg(short, long, default_value_t = 25, env = "PASTOR_FILE_SIZE_LIMIT")]
+    file_size_limit: usize,
 }
 
 #[tokio::main]
@@ -79,7 +83,8 @@ async fn main() {
     let args = Args::parse();
 
     let auth_state = auth::Auth::new(args.tokens.clone()).await;
-    let file_state = handlers::file::FileState::new(args.storage.clone(), args.tokens.clone()).await;
+    let file_state =
+        handlers::file::FileState::new(args.storage.clone(), args.tokens.clone()).await;
 
     let tokens = file_state.tokens.clone();
     let token_handle = tokio::spawn(tokens.refresh());
@@ -88,7 +93,11 @@ async fn main() {
     // build our application with a single route
     let app = Router::new()
         .merge(handlers::ui::router())
-        .merge(handlers::file::router(file_state, auth_state));
+        .merge(handlers::file::router(
+            file_state,
+            auth_state,
+            args.file_size_limit,
+        ));
 
     // run our app with hyper, listening globally on port 3000
     let listener = tokio::net::TcpListener::bind(format!("{}:{}", args.address, args.port))

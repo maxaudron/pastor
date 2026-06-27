@@ -1,7 +1,8 @@
-use std::{path::PathBuf, str::Utf8Error};
+use std::{error::Error, path::PathBuf, str::Utf8Error};
 
 use axum::{
     body::Body,
+    extract::multipart::MultipartError,
     http::StatusCode,
     response::{IntoResponse, Response},
 };
@@ -21,6 +22,8 @@ pub enum PasteError {
     MagicError(#[from] magic::cookie::Error),
     #[error("failed to parse PasteId from path: {0}")]
     PasteIdFromPath(PathBuf),
+    #[error("failed to read multipart data: {0}")]
+    MultipartError(MultipartError),
 
     #[error("Unauthorized to operate on this paste")]
     Unauthorized,
@@ -35,6 +38,18 @@ pub enum PasteError {
 impl IntoResponse for PasteError {
     fn into_response(self) -> axum::response::Response {
         match &self {
+            PasteError::MultipartError(err) => {
+                error!(
+                    "multipart error: source: {:?} status: {}",
+                    err.source(),
+                    err.status()
+                );
+
+                return Response::builder()
+                    .status(err.status())
+                    .body(Body::from(err.status().to_string()))
+                    .unwrap();
+            }
             PasteError::NotFound => {
                 return Response::builder()
                     .status(StatusCode::NOT_FOUND)
