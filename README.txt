@@ -37,15 +37,7 @@ Description
 Installation
 ============
 
- To run pastor with docker or podman:
-
-   podman run -p 80:8000 -v <storage path>:/storage kube.cat/cocainefarm/pastor:latest
-
- To run pastor using the binary:
-
-   curl -Lo pastor https://gitlab.com/api/v4/projects/17469937/packages/generic/pastor/0.13.0/pastor_amd64_static
-   chmod +x pastor
-   ROCKET_STORAGE_DIR=<storage path> ./pastor
+ You're a big boi, you'll figure it out
 
 Usage
 =====
