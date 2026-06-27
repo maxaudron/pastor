@@ -20,14 +20,23 @@ pub async fn cleanup_routine(storage: PathBuf) {
 pub async fn cleanup(storage: &Path) -> Result<(), PasteError> {
     for entry in std::fs::read_dir(storage)? {
         let path = entry?.path();
-        let (paste, _) = Paste::load_from_path(&path, None).await?;
-        if paste.expired()? {
-            debug!(
-                "Deleting: {paste:?}. (Now: {})",
-                chrono::Utc::now().timestamp()
-            );
-            tokio::fs::remove_file(path).await?
-        }
+        match Paste::load_from_path(&path, None).await {
+            Ok((paste, _)) => {
+                if !paste.expired()? {
+                    return Ok(());
+                }
+
+                debug!(
+                    "Deleting: {paste:?}. (Now: {})",
+                    chrono::Utc::now().timestamp()
+                );
+            }
+            Err(err) => {
+                error!("got error {err} while cleanup pastes, deleting path {path:?} anyways")
+            }
+        };
+
+        tokio::fs::remove_file(path).await?;
     }
 
     Ok(())
@@ -68,5 +77,18 @@ mod tests {
         crate::cleanup::cleanup(storage).await.unwrap();
         assert!(!paste1.path(storage).exists());
         assert!(paste2.path(storage).exists());
+    }
+
+    #[tokio::test]
+    #[traced_test]
+    async fn cleanup_broken_file() {
+        let dir = tempdir().unwrap();
+        let storage = dir.path();
+
+        let _file = tokio::fs::write(storage.join("testfile"), "")
+            .await
+            .unwrap();
+        crate::cleanup::cleanup(storage).await.unwrap();
+        assert!(!storage.join("testfile").exists());
     }
 }
