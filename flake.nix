@@ -1,85 +1,98 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-26.05";
-    nci.url = "github:yusdacra/nix-cargo-integration";
-    nci.inputs.nixpkgs.follows = "nixpkgs";
     parts.url = "github:hercules-ci/flake-parts";
     parts.inputs.nixpkgs-lib.follows = "nixpkgs";
+    crane.url = "github:ipetkov/crane";
+
+    fenix = {
+      url = "github:nix-community/fenix";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
   outputs =
-    inputs@{ parts, nci, ... }:
-    parts.lib.mkFlake { inherit inputs; } ({ moduleWithSystem, ... }: {
+    inputs@{
+      self,
+      parts,
+      crane,
+      fenix,
+      ...
+    }:
+    parts.lib.mkFlake { inherit inputs; } {
       systems = [
         "x86_64-linux"
-        "x86_64-darwin"
         "aarch64-linux"
         "aarch64-darwin"
       ];
-      imports = [ nci.flakeModule ];
-
-      flake = {
-        nixosModules.default = moduleWithSystem (
-          perSystem@{ config }:
-          nixos@{ ... }:
-          {
-            services.pastor.package = perSystem.config.packages.default;
-            imports = [ ./nix/nixos-module.nix ];
-          }
-        );
-      };
-
       perSystem =
         {
+          self',
           pkgs,
           config,
           lib,
+          system,
           ...
         }:
         let
-          # shorthand for accessing this crate's outputs
-          # you can access crate outputs under `config.nci.outputs.<crate name>` (see documentation)
-          crateOutputs = config.nci.outputs."pastor";
-        in
-        {
-          nci = {
-            # TODO clean source
-            projects."pastor".path = ./.;
-            crates."pastor" =
-              let
-                mkDerivation = {
-                  nativeBuildInputs = [ pkgs.file.dev ];
-                };
-                env = {
-                  PASTOR_MIME_DB = "${pkgs.file}/share/misc/";
-                };
-              in
-              {
-                runtimeLibs = [ pkgs.file ];
+          toolchain = fenix.packages.${system}.stable;
+          craneLib = (crane.mkLib pkgs).overrideToolchain toolchain.toolchain;
 
-                profiles = {
-                  release.runTests = false;
-                };
+          # Common arguments can be set here to avoid repeating them later
+          # Note: changes here will rebuild all dependency crates
+          commonArgs = {
+            src = craneLib.cleanCargoSource ./.;
+            strictDeps = true;
 
-                drvConfig = {
-                  inherit mkDerivation env;
-                };
-                depsDrvConfig = {
-                  inherit mkDerivation env;
-                };
-              };
+            # Disable checks because we require xattrs and that is not supported
+            # in the build sandbox
+            doCheck = false;
 
-            toolchainConfig = {
-              channel = "stable";
-              targets = [ "x86_64-unknown-linux-musl" ];
-              components = [ "rustfmt" "rust-src" ];
-            };
+            nativeBuildInputs = with pkgs; [
+              pkg-config
+              autoPatchelfHook
+            ];
+
+            buildInputs = with pkgs; [
+              libgcc
+              file
+            ];
           };
 
-          devShells.default = crateOutputs.devShell.overrideAttrs (prev: {
+          cargoArtifacts = craneLib.buildDepsOnly commonArgs;
+
+          fileSetForCrate = lib.fileset.toSource {
+            root = ./.;
+            fileset = lib.fileset.unions [
+              ./Cargo.toml
+              ./Cargo.lock
+              (craneLib.fileset.commonCargoSources ./src)
+              ./static
+              ./templates
+            ];
+          };
+
+          pastor = craneLib.buildPackage (
+            commonArgs
+            // {
+              inherit cargoArtifacts;
+              src = fileSetForCrate;
+            }
+          );
+        in
+        {
+          devShells.default = craneLib.devShell {
+            checks = self.checks;
+
             PASTOR_MIME_DB = "${pkgs.file}/share/misc/";
-          });
-          packages.default = crateOutputs.packages.release;
+
+            inputsFrom = [ pastor ];
+            packages = [ toolchain.rust-analyzer ];
+          };
+
+          packages = {
+            default = pastor;
+          };
         };
-    });
+    };
 }
