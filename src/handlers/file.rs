@@ -50,18 +50,6 @@ pub fn router(state: FileState, auth_state: auth::Auth, file_size_limit: usize) 
         .with_state(state)
 }
 
-macro_rules! e {
-    ($exp:expr, $p:expr, $id:expr) => {
-        match $exp {
-            Ok(ok) => ok,
-            Err(err) => {
-                $p.push(Err(($id, err)));
-                break;
-            }
-        }
-    };
-}
-
 #[instrument(level = "trace")]
 async fn upload(
     State(state): State<FileState>,
@@ -69,69 +57,59 @@ async fn upload(
     TypedHeader(host): TypedHeader<Host>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, PasteError> {
-    let mut inner = async || -> Result<Vec<Result<Paste, (PasteId, PasteError)>>, PasteError> {
-        let mut pastes = Vec::new();
+    let mut pastes: Vec<Result<Paste, (PasteId, PasteError)>> = Vec::new();
 
-        'multi: while let Some(mut field) = multipart
-            .next_field()
-            .await
-            .map_err(PasteError::MultipartError)?
-        {
-            let id = PasteId::new();
-            debug!("new file with id: {id}");
-            let mut handle = e!(
-                Paste::get_handle_create(&state.storage.join(&id)).await,
-                pastes,
-                id
-            );
+    loop {
+        let field = match multipart.next_field().await {
+            Ok(Some(field)) => field,
+            Ok(None) => break,
+            Err(err) => {
+                error!("failed to read multipart field: {err}");
+                break;
+            }
+        };
 
-            while let Some(chunk) = match field.chunk().await {
-                Ok(ok) => ok,
-                Err(err) => {
-                    pastes.push(Err((id, PasteError::from(err))));
-                    break 'multi;
-                }
-            } {
-                match handle.write_all(&chunk).await {
-                    Ok(_) => (),
-                    Err(err) => {
-                        pastes.push(Err((id, PasteError::from(err))));
-                        break 'multi;
-                    }
-                };
+        let id = PasteId::new();
+        debug!("new file with id: {id}");
+
+        let result: Result<Paste, PasteError> = (|| async {
+            let mut handle = Paste::get_handle_create(&state.storage.join(&id)).await?;
+
+            let mut field = field;
+            while let Some(chunk) = field.chunk().await.map_err(PasteError::from)? {
+                handle.write_all(&chunk).await.map_err(PasteError::from)?;
             }
 
-            handle.flush().await?;
+            handle.flush().await.map_err(PasteError::from)?;
 
-            let paste = e!(
-                Paste::from_handle(id.clone(), handle, bearer.token()).await,
-                pastes,
-                id
-            );
-            e!(paste.write(&state.storage).await, pastes, id);
+            let paste = Paste::from_handle(id.clone(), handle, bearer.token()).await?;
+            paste.write(&state.storage).await?;
 
-            pastes.push(Ok(paste));
+            Ok(paste)
+        })()
+        .await;
+
+        match result {
+            Ok(paste) => pastes.push(Ok(paste)),
+            Err(err) => {
+                error!("failed to create paste: {err}");
+                if let Err(cleanup_err) = tokio::fs::remove_file(id.path(&state.storage)).await {
+                    error!("error while trying to delete errored upload: {cleanup_err}");
+                }
+                pastes.push(Err((id, err)));
+            }
         }
-
-        Ok(pastes)
-    };
-
-    let pastes = inner().await.unwrap();
+    }
 
     let mut result = String::new();
 
     for p in pastes {
         match p {
             Ok(paste) => {
-                result.push_str(&format!("https://{host}/{}", paste.id.to_string()));
+                result.push_str(&format!("https://{host}/{}", paste.id));
                 result.push('\n');
             }
-            Err((id, err)) => {
-                error!("failed to create paste: {err}");
-                match tokio::fs::remove_file(id.path(&state.storage)).await {
-                    Ok(_) => (),
-                    Err(err) => error!("error while trying to delete errored upload: {err}"),
-                };
+            Err((_id, err)) => {
                 result.push_str(&err.to_string());
                 result.push('\n');
             }
