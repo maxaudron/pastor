@@ -25,6 +25,9 @@
         "aarch64-linux"
         "aarch64-darwin"
       ];
+      flake = {
+        nixosModules.default = import ./nix/nixos-module.nix;
+      };
       perSystem =
         {
           self',
