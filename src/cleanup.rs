@@ -44,6 +44,7 @@ mod tests {
     use std::path::Path;
 
     use tempfile::tempdir;
+    use tokio::io::AsyncWriteExt;
     use tracing_test::traced_test;
 
     use crate::{file::Paste, id::PasteId};
@@ -57,6 +58,12 @@ mod tests {
             token: "secrettoken".to_string(),
             mime: "text/none".to_string(),
         };
+
+        let mut file = Paste::get_handle_create(&paste.path(storage))
+            .await
+            .unwrap()
+            .into_file();
+        file.write_all("this is a cleanup".as_bytes()).await.unwrap();
 
         paste.write(storage).await.unwrap();
 

@@ -2,7 +2,7 @@
 name = "pastor"
 description = "The pastebin that hopefully doesn't suck"
 
-version = "0.14.1"
+version = "0.14.2"
 homepage = "https://git.vapor.systems/pastor.git/about"
 repository = "https://git.vapor.systems/pastor.git"
 documentation = "https://docs.rs/pastor"

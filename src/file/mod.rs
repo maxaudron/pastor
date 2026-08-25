@@ -102,7 +102,7 @@ impl Paste {
     }
 
     pub async fn write(&self, root: &Path) -> Result<(), PasteError> {
-        let file = Paste::get_handle_create(&root.join(&self.id)).await?;
+        let file = Paste::get_handle(&root.join(&self.id)).await?;
         file.set_xattr_i64(XATTR_CREATED, self.created).unwrap();
         file.set_xattr_i64(XATTR_EXPIRES, self.expires).unwrap();
         file.set_xattr_str(XATTR_TOKEN, &self.token).unwrap();
@@ -150,6 +150,7 @@ impl Paste {
 #[cfg(test)]
 mod tests {
     use tempfile::tempdir;
+    use tokio::io::AsyncWriteExt;
     use tracing_test::traced_test;
 
     use super::Paste;
@@ -171,6 +172,16 @@ mod tests {
         let dir = tempdir().unwrap();
         let root = dir.path();
         let paste = paste();
+
+        {
+            let mut file = Paste::get_handle_create(&paste.path(root))
+                .await
+                .unwrap()
+                .into_file();
+            file.write_all("this is a test".as_bytes()).await.unwrap();
+            file.flush().await.unwrap();
+            assert!(root.join(&paste.id).exists());
+        }
 
         paste.write(root).await.unwrap();
         assert!(root.join(&paste.id).exists());
